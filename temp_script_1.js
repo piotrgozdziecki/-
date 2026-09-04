@@ -1,2014 +1,4 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#020617">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>DTA Graniczna 8f: Nocna Zmiana</title>
-  <script src="three.min.js"></script>
-  <script src="three_engine.js"></script>
-  <script>
-    if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
-      CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, radii) {
-        if (typeof radii === 'number') radii = [radii, radii, radii, radii];
-        else if (!Array.isArray(radii)) radii = [4, 4, 4, 4];
-        const r = Math.min(radii[0] || 0, w / 2, h / 2);
-        this.beginPath();
-        this.moveTo(x + r, y);
-        this.lineTo(x + w - r, y);
-        this.quadraticCurveTo(x + w, y, x + w, y + r);
-        this.lineTo(x + w, y + h - r);
-        this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-        this.lineTo(x + r, y + h);
-        this.quadraticCurveTo(x, y + h, x, y + h - r);
-        this.lineTo(x, y + r);
-        this.quadraticCurveTo(x, y, x + r, y);
-        this.closePath();
-        return this;
-      };
-    }
-    window.onerror = function(msg, url, line, col, error) {
-      console.error("GLOBAL ERROR: " + msg + " at " + url + ":" + line + ":" + col, error);
-      return false;
-    };
-    window.onunhandledrejection = function(event) {
-      console.error("UNHANDLED REJECTION: " + event.reason);
-    };
-  </script>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #020617;
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Roboto, 'Segoe UI', sans-serif;
-      color: #f8fafc;
-      touch-action: none;
-      -webkit-font-smoothing: antialiased;
-      padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
-    }
-    #game-container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      background: #020617;
-      overflow: hidden;
-    }
-    canvas {
-      touch-action: none;
-      display: block;
-      width: 100%;
-      height: 100%;
-      background: transparent;
-      image-rendering: pixelated;
-      image-rendering: -moz-crisp-edges;
-      image-rendering: crisp-edges;
-    }
-    #threeCanvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      pointer-events: none;
-    }
-    #gameCanvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 2;
-      pointer-events: none;
-    }
 
-    /* HUD */
-    #hud {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 10;
-    }
-    .xp-bar-container {
-      position: absolute;
-      top: max(env(safe-area-inset-top, 8px), 8px);
-      left: max(env(safe-area-inset-left, 10px), 10px);
-      right: max(env(safe-area-inset-right, 10px), 10px);
-      height: clamp(10px, 1.6vh, 14px);
-      background: rgba(3, 7, 18, 0.95);
-      border: 1.5px solid #38bdf8;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 0 20px rgba(56, 189, 248, 0.6), inset 0 1px 4px rgba(0,0,0,0.9);
-    }
-
-
-    .xp-bar-fill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #0284c7, #38bdf8 65%, #e0f2fe);
-      box-shadow: 0 0 12px #38bdf8, 0 0 4px #bae6fd;
-      transition: width 0.08s linear;
-    }
-    .hud-top-bar {
-      position: absolute;
-      top: max(env(safe-area-inset-top, 8px), 8px);
-      left: max(env(safe-area-inset-left, 8px), 8px);
-      right: max(env(safe-area-inset-right, 8px), 8px);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      pointer-events: none;
-    }
-    .status-panel {
-      margin-top: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-    }
-    .status-panel-group {
-      display: flex;
-      gap: 5px;
-      align-items: center;
-    }
-    .stat-badge {
-      background: rgba(8, 15, 30, 0.90);
-      border: 1.5px solid rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      padding: 4px 8px;
-      border-radius: 8px;
-      font-size: 11.5px;
-      font-weight: 900;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      letter-spacing: 0.3px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
-      text-shadow: 0 1px 2px rgba(0,0,0,0.9);
-      white-space: nowrap;
-    }
-    @media (max-width: 640px) {
-      .badge-char { display: none !important; }
-      #badge-zoom { display: none !important; }
-      .stat-badge {
-        font-size: 10px !important;
-        padding: 3px 6px !important;
-      }
-    }
-    .badge-battery { border-color: #22c55e; color: #4ade80; text-shadow: 0 0 10px rgba(74, 222, 128, 0.7); }
-    .badge-battery.low { border-color: #ef4444; color: #f87171; animation: pulseAlert 0.5s infinite alternate; }
-    .badge-clock { border-color: #f59e0b; color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.6); }
-    .badge-combo { border-color: #ec4899; color: #f472b6; font-size: 11.5px; font-weight: 900; text-shadow: 0 0 12px rgba(236, 72, 153, 0.9); transition: all 0.2s ease; }
-    .badge-combo.turbo {
-      border-color: #f59e0b;
-      color: #fbbf24;
-      text-shadow: 0 0 14px rgba(245, 158, 11, 0.9);
-      animation: pulseTurbo 0.6s infinite alternate;
-    }
-    .badge-combo.hyper {
-      border-color: #38bdf8;
-      color: #7dd3fc;
-      text-shadow: 0 0 18px rgba(56, 189, 248, 1.0);
-      animation: pulseHyper 0.35s infinite alternate;
-    }
-    .badge-lvl { border-color: #a855f7; color: #c084fc; text-shadow: 0 0 10px rgba(168, 85, 247, 0.6); }
-    .badge-char { border-color: #38bdf8; color: #7dd3fc; text-shadow: 0 0 10px rgba(56, 189, 248, 0.6); }
-
-    @keyframes pulseTurbo {
-      from { transform: scale(1); box-shadow: 0 0 8px rgba(245, 158, 11, 0.5); }
-      to { transform: scale(1.06); box-shadow: 0 0 20px rgba(245, 158, 11, 0.9); }
-    }
-    @keyframes pulseHyper {
-      from { transform: scale(1.02); box-shadow: 0 0 12px rgba(56, 189, 248, 0.6); }
-      to { transform: scale(1.1); box-shadow: 0 0 26px rgba(168, 85, 247, 0.9); }
-    }
-    @keyframes pulseAlert {
-      from { transform: scale(1); box-shadow: 0 0 6px #ef4444; }
-      to { transform: scale(1.06); box-shadow: 0 0 20px #ef4444; }
-    }
-
-    #boss-hp-container {
-      position: absolute;
-      top: 54px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: min(92%, 460px);
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-      z-index: 15;
-    }
-    .boss-name-label {
-      font-size: 12.5px;
-      font-weight: 900;
-      color: #fca5a5;
-      text-transform: uppercase;
-      letter-spacing: 1.2px;
-      text-shadow: 0 0 12px rgba(239, 68, 68, 0.9);
-    }
-    .boss-hp-track {
-      width: 100%;
-      height: 14px;
-      background: rgba(0, 0, 0, 0.92);
-      border: 2px solid #ef4444;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 0 14px rgba(239, 68, 68, 0.6);
-    }
-    .boss-hp-fill {
-      height: 100%;
-      width: 100%;
-      background: linear-gradient(90deg, #991b1b, #ef4444, #fca5a5);
-      transition: width 0.08s ease-out;
-    }
-
-    /* Active Weapons Indicator in HUD */
-    .weapons-hud {
-      position: absolute;
-      bottom: max(env(safe-area-inset-bottom, 14px), 14px);
-      left: 14px;
-      display: flex;
-      gap: 7px;
-    }
-    .weapon-hud-slot {
-      width: 36px;
-      height: 36px;
-      background: rgba(8, 14, 26, 0.88);
-      border: 1.5px solid #38bdf8;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      position: relative;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.6);
-    }
-    .weapon-hud-slot.evo {
-      border-color: #f59e0b;
-      box-shadow: 0 0 12px #f59e0b;
-      animation: pulseAlert 1s infinite alternate;
-    }
-
-    /* Touch Controls */
-    #touch-controls {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 20;
-    }
-    .joystick-zone {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 50%;
-      height: 70%;
-      pointer-events: auto;
-    }
-    #joystick-base {
-      position: absolute;
-      width: 126px;
-      height: 126px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(56, 189, 248, 0.25) 0%, rgba(8, 14, 26, 0.8) 80%);
-      border: 2px solid rgba(56, 189, 248, 0.8);
-      box-shadow: 0 0 22px rgba(56, 189, 248, 0.4);
-      transform: translate(-50%, -50%);
-      display: none;
-      pointer-events: none;
-    }
-    #joystick-thumb {
-      position: absolute;
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      background: radial-gradient(circle, #7dd3fc 15%, #0284c7 85%);
-      border: 2.5px solid #ffffff;
-      box-shadow: 0 0 16px rgba(56, 189, 248, 0.8);
-      transform: translate(-50%, -50%);
-      display: none;
-      pointer-events: none;
-    }
-    /* Action Buttons */
-    .action-zone {
-      position: absolute;
-      bottom: max(env(safe-area-inset-bottom, 16px), 16px);
-      right: max(env(safe-area-inset-right, 16px), 16px);
-      pointer-events: auto;
-      display: flex;
-      flex-direction: row;
-      align-items: flex-end;
-      gap: clamp(8px, 2vw, 14px);
-    }
-    .action-btn-secondary {
-      width: clamp(54px, 13vw, 68px);
-      height: clamp(54px, 13vw, 68px);
-      border-radius: 50%;
-      background: radial-gradient(circle, #8b5cf6, #5b21b6);
-      border: 2px solid #ede9fe;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-size: clamp(7.5px, 1.8vw, 9px);
-      font-weight: 900;
-      text-transform: uppercase;
-      box-shadow: 0 4px 14px rgba(139, 92, 246, 0.5);
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-      touch-action: none;
-    }
-    .action-btn-secondary:active { transform: scale(0.92); }
-    .action-btn-secondary .btn-cd {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      border-radius: 50%;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: 900;
-      color: #c4b5fd;
-    }
-
-    /* Intro cutscene dialog & Graphic Stages */
-    #intro-screen {
-      background: rgba(3, 5, 11, 0.97);
-      z-index: 120;
-    }
-    .intro-modal {
-      max-width: 620px;
-      width: 95%;
-      background: #090e17;
-      border: 3px solid #f59e0b;
-      border-radius: 20px;
-      padding: 16px;
-      box-shadow: 0 0 45px rgba(245, 158, 11, 0.35), inset 0 0 20px rgba(0, 0, 0, 0.8);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      text-align: left;
-    }
-    .intro-top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #1e293b;
-      padding-bottom: 6px;
-    }
-    .intro-meta-tags {
-      display: flex;
-      gap: 6px;
-      font-size: 10px;
-      font-weight: 800;
-      color: #94a3b8;
-    }
-    .intro-meta-tag {
-      background: #1e293b;
-      padding: 2px 6px;
-      border-radius: 4px;
-      border: 1px solid #334155;
-    }
-    .intro-meta-tag.alert {
-      background: #7f1d1d;
-      color: #fca5a5;
-      border-color: #ef4444;
-      animation: pulseAlert 1.2s infinite alternate;
-    }
-    @keyframes pulseAlert {
-      from { opacity: 0.7; }
-      to { opacity: 1.0; transform: scale(1.03); }
-    }
-
-    /* Graphic Illustration Box */
-    .intro-art-stage {
-      width: 100%;
-      height: 145px;
-      border-radius: 12px;
-      border: 2px solid #334155;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #020617;
-      box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
-    }
-    .intro-art-badge {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      background: rgba(0, 0, 0, 0.85);
-      border: 1px solid #f59e0b;
-      color: #fbbf24;
-      font-size: 10px;
-      font-weight: 900;
-      padding: 3px 8px;
-      border-radius: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    .intro-art-stamp {
-      position: absolute;
-      bottom: 8px;
-      right: 12px;
-      border: 3px dashed #ef4444;
-      color: #ef4444;
-      font-size: 14px;
-      font-weight: 900;
-      padding: 4px 10px;
-      border-radius: 6px;
-      text-transform: uppercase;
-      transform: rotate(-12deg);
-      background: rgba(0, 0, 0, 0.75);
-      letter-spacing: 1px;
-      z-index: 10;
-      text-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
-    }
-    .intro-art-satire {
-      position: absolute;
-      bottom: 6px;
-      left: 8px;
-      font-size: 9.5px;
-      font-style: italic;
-      color: #cbd5e1;
-      background: rgba(15, 23, 42, 0.85);
-      padding: 2px 6px;
-      border-radius: 4px;
-      border-left: 3px solid #f59e0b;
-      max-width: 60%;
-      z-index: 10;
-    }
-
-    .intro-scene {
-      background: #111827;
-      border-left: 5px solid #38bdf8;
-      border-radius: 8px;
-      padding: 10px 12px;
-      font-size: 12.5px;
-      line-height: 1.45;
-      color: #f1f5f9;
-      min-height: 85px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-    .intro-speaker {
-      font-weight: 900;
-      color: #38bdf8;
-      font-size: 13px;
-      margin-bottom: 4px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .intro-buttons {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      align-items: center;
-    }
-    .btn-skip {
-      background: #334155;
-      color: #94a3b8;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 16px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .btn-next {
-      background: linear-gradient(180deg, #f59e0b, #d97706);
-      color: #0f172a;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 20px;
-      font-size: 13px;
-      font-weight: 900;
-      cursor: pointer;
-    }
-    .action-btn {
-      width: clamp(62px, 15vw, 76px);
-      height: clamp(62px, 15vw, 76px);
-      border-radius: 50%;
-      background: radial-gradient(circle, #f97316, #c2410c);
-      border: 3px solid #ffedd5;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-size: clamp(8px, 2vw, 10px);
-      font-weight: 900;
-      text-transform: uppercase;
-      box-shadow: 0 4px 16px rgba(234, 88, 12, 0.5);
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-      touch-action: none;
-    }
-    .action-btn:active { transform: scale(0.92); }
-    .action-btn .btn-cd {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.75);
-      border-radius: 50%;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      font-weight: 900;
-      color: #fef08a;
-    }
-
-    /* Modal Screens */
-    .screen-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(9, 11, 16, 0.94);
-      /* backdrop-filter: blur(8px); */
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      padding: 12px 10px;
-      z-index: 100;
-      text-align: center;
-      overflow-y: auto;
-      overflow-x: hidden;
-      touch-action: pan-y;
-      -webkit-overflow-scrolling: touch;
-    }
-    .card-modal {
-      max-width: 620px;
-      width: 100%;
-      max-height: 85vh;
-      background: #171d29;
-      border: 2px solid #f59e0b;
-      border-radius: 16px;
-      padding: 16px 14px;
-      box-shadow: 0 12px 36px rgba(0,0,0,0.85);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      overflow-y: auto;
-      overflow-x: hidden;
-      touch-action: pan-y;
-      -webkit-overflow-scrolling: touch;
-      margin: auto 0;
-    }
-    h1 { font-size: 20px; font-weight: 900; color: #f59e0b; }
-    h2 { font-size: 14px; color: #38bdf8; }
-    p { font-size: 12px; line-height: 1.4; color: #cbd5e1; }
-    .story-box {
-      background: #0f141e;
-      border-left: 4px solid #ef4444;
-      padding: 8px 10px;
-      border-radius: 6px;
-      font-size: 11px;
-      text-align: left;
-      color: #fca5a5;
-      line-height: 1.4;
-    }
-
-    /* Character Selection Cards */
-    .char-section-title {
-      font-size: 11px;
-      font-weight: 900;
-      color: #38bdf8;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-top: 4px;
-      text-align: left;
-    }
-    .mode-selector {
-      display: flex;
-      gap: 6px;
-      margin: 4px 0;
-      touch-action: pan-y;
-    }
-    .mode-btn {
-      flex: 1;
-      background: #111622;
-      border: 1.5px solid rgba(255,255,255,0.15);
-      border-radius: 8px;
-      padding: 7px 4px;
-      color: #94a3b8;
-      font-size: 10.5px;
-      font-weight: 800;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      transition: all 0.15s;
-    }
-    .mode-btn.selected {
-      border-color: #f59e0b;
-      background: rgba(245, 158, 11, 0.15);
-      color: #fef08a;
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
-    }
-    .arena-selection-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      margin: 4px 0 6px 0;
-      touch-action: pan-y;
-    }
-    .arena-card {
-      background: #111622;
-      border: 1.5px solid rgba(255,255,255,0.12);
-      border-radius: 8px;
-      padding: 6px 4px;
-      cursor: pointer;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      transition: all 0.15s;
-    }
-    .arena-card.selected {
-      border-color: #38bdf8;
-      background: rgba(56, 189, 248, 0.15);
-      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
-    }
-    .arena-icon { font-size: 20px; }
-    .arena-name { font-size: 10px; font-weight: 800; color: #f8fafc; }
-    .arena-perk { font-size: 8px; color: #38bdf8; line-height: 1.2; }
-
-    .char-selection-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 6px;
-      margin: 4px 0;
-      max-height: 280px;
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding-right: 4px;
-      touch-action: pan-y;
-      -webkit-overflow-scrolling: touch;
-    }
-    .char-card {
-      background: #111622;
-      border: 2px solid rgba(255,255,255,0.12);
-      border-radius: 9px;
-      padding: 7px;
-      cursor: pointer;
-      text-align: left;
-      transition: border-color 0.15s, background 0.15s;
-    }
-    .char-card.selected {
-      border-color: #38bdf8;
-      background: rgba(56, 189, 248, 0.15);
-      box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
-    }
-    .char-header {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-weight: 800;
-      font-size: 12px;
-      color: #f59e0b;
-    }
-    .char-skill {
-      font-size: 9.5px;
-      color: #94a3b8;
-      margin-top: 3px;
-      line-height: 1.3;
-    }
-
-    .menu-tabs {
-      display: flex;
-      gap: 4px;
-      width: 100%;
-      background: #0b0e14;
-      padding: 3px;
-      border-radius: 8px;
-    }
-    .tab-btn {
-      flex: 1;
-      padding: 6px 2px;
-      font-size: 10px;
-      font-weight: 800;
-      color: #94a3b8;
-      background: transparent;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .tab-btn.active {
-      background: #2563eb;
-      color: #fff;
-    }
-    .tab-content { display: none; width: 100%; text-align: left; }
-    .tab-content.active { display: flex; flex-direction: column; gap: 8px; }
-
-    .sticky-start-wrapper {
-      position: sticky;
-      bottom: -16px;
-      background: #171d29;
-      padding: 12px 14px;
-      margin: 10px -14px -16px -14px;
-      z-index: 100;
-      border-top: 1px solid #334155;
-      box-shadow: 0 -10px 20px rgba(23, 29, 41, 0.95);
-    }
-    .btn-main {
-      background: linear-gradient(180deg, #f59e0b, #d97706);
-      color: #0f172a;
-      font-size: 14px;
-      font-weight: 900;
-      padding: 10px 16px;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      width: 100%;
-    }
-    .btn-main:active { transform: scale(0.97); }
-
-    /* Highscores Table */
-    .scores-list {
-      max-height: 180px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-    .score-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 6px 8px;
-      background: #111622;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 6px;
-      font-size: 11px;
-    }
-
-    /* Achievements Grid */
-    .ach-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 6px;
-      max-height: 190px;
-      overflow-y: auto;
-    }
-    .ach-card {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 8px;
-      background: #111622;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      opacity: 0.55;
-    }
-    .ach-card.unlocked {
-      border-color: #f59e0b;
-      background: rgba(245, 158, 11, 0.1);
-      opacity: 1.0;
-    }
-    .ach-icon { font-size: 20px; width: 30px; text-align: center; }
-    .ach-title { font-size: 11px; font-weight: 800; color: #f59e0b; }
-    .ach-desc { font-size: 10px; color: #94a3b8; }
-
-    /* Evolutions Guide Grid */
-    .evo-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      max-height: 210px;
-      overflow-y: auto;
-    }
-    .evo-card {
-      background: #111622;
-      border: 1.5px solid #a855f7;
-      border-radius: 8px;
-      padding: 6px 10px;
-      font-size: 11px;
-    }
-    .evo-formula {
-      color: #38bdf8;
-      font-weight: 800;
-      margin-bottom: 2px;
-    }
-
-    /* Workshop (Shop) Grid */
-    .workshop-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 8px;
-      max-height: 220px;
-      overflow-y: auto;
-    }
-    .workshop-card {
-      background: #111622;
-      border: 1.5px solid #334155;
-      border-radius: 10px;
-      padding: 8px 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      text-align: left;
-    }
-    .workshop-card-title {
-      font-size: 12px;
-      font-weight: 900;
-      color: #38bdf8;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .workshop-card-desc {
-      font-size: 10px;
-      color: #94a3b8;
-    }
-    .workshop-btn {
-      margin-top: 4px;
-      background: linear-gradient(180deg, #f59e0b, #d97706);
-      color: #0f172a;
-      font-size: 10.5px;
-      font-weight: 900;
-      padding: 5px 8px;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .workshop-btn:disabled {
-      background: #334155;
-      color: #64748b;
-      cursor: not-allowed;
-    }
-
-    /* Decrees Lore List */
-    .decree-item {
-      background: #111622;
-      border: 1.5px solid #f59e0b;
-      border-radius: 10px;
-      padding: 8px 12px;
-      margin-bottom: 6px;
-    }
-    .decree-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      color: #fef08a;
-      font-size: 12px;
-      font-weight: 900;
-      margin-bottom: 4px;
-    }
-    .decree-body {
-      font-size: 10.5px;
-      color: #e2e8f0;
-      line-height: 1.35;
-    }
-    .decree-perk {
-      font-size: 10px;
-      color: #38bdf8;
-      font-weight: 700;
-      margin-top: 3px;
-    }
-
-    /* Stage Transition Modal */
-    #stage-transition-screen { display: none; z-index: 150; }
-
-    /* Level Up Selection */
-    #levelup-screen { display: none; z-index: 120; }
-    .upgrade-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
-    .upgrade-card {
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.99));
-      border: 2px solid #38bdf8;
-      border-radius: 14px;
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      cursor: pointer;
-      text-align: left;
-      box-shadow: 0 6px 22px rgba(0, 0, 0, 0.9), inset 0 1px 1px rgba(255,255,255,0.2);
-      transition: transform 0.1s, border-color 0.15s;
-    }
-    .upgrade-card:active { transform: scale(0.97); }
-    .upgrade-card.is-evolution {
-      border-color: #f59e0b;
-      background: linear-gradient(135deg, rgba(120, 53, 15, 0.98), rgba(30, 58, 138, 0.99));
-      box-shadow: 0 0 25px rgba(245, 158, 11, 0.6), inset 0 1px 2px rgba(254, 240, 138, 0.4);
-      animation: pulseAlert 1.0s infinite alternate;
-    }
-    .card-icon { font-size: 30px; width: 44px; text-align: center; flex-shrink: 0; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.9)); }
-    .card-title { font-weight: 900; font-size: 15.5px; color: #38bdf8; letter-spacing: 0.4px; text-shadow: 0 1px 4px #000, 0 0 8px rgba(56, 189, 248, 0.4); }
-    .card-desc { font-size: 13px; color: #f8fafc; line-height: 1.4; font-weight: 600; text-shadow: 0 1px 3px #000; }
-    .card-level { font-size: 12px; font-weight: 900; color: #facc15; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 1px 3px #000; }
-
-    /* Toast */
-    #ach-toast {
-      position: absolute;
-      top: 15px;
-      left: 50%;
-      transform: translateX(-50%) translateY(-100px);
-      background: linear-gradient(90deg, #1e293b, #0f172a);
-      border: 2px solid #f59e0b;
-      border-radius: 10px;
-      padding: 8px 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      z-index: 200;
-      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      pointer-events: none;
-    }
-    #ach-toast.show { transform: translateX(-50%) translateY(0); }
-    .toast-title { font-size: 10px; font-weight: 900; color: #f59e0b; text-transform: uppercase; }
-    .toast-name { font-size: 12px; font-weight: 800; color: #fff; }
-
-    /* LUCKY CHEST MODAL (Vampire Survivors Style) */
-    #chest-screen { display: none; z-index: 160; }
-    .chest-modal {
-      background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
-      border: 3px solid #facc15;
-      border-radius: 20px;
-      padding: 20px;
-      width: 90%;
-      max-width: 440px;
-      text-align: center;
-      box-shadow: 0 0 50px rgba(250, 204, 21, 0.5), inset 0 0 20px rgba(250, 204, 21, 0.2);
-      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      position: relative;
-      overflow: hidden;
-    }
-    .chest-banner {
-      font-size: 22px;
-      font-weight: 900;
-      color: #facc15;
-      text-shadow: 0 0 15px rgba(250, 204, 21, 0.8), 0 2px 4px #000;
-      letter-spacing: 1px;
-      margin-bottom: 8px;
-    }
-    .chest-visual-box {
-      font-size: 64px;
-      margin: 10px 0;
-      filter: drop-shadow(0 0 25px #f59e0b);
-      animation: pulseAlert 0.8s infinite alternate;
-    }
-    .chest-slots-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin: 12px 0;
-    }
-    .chest-reward-card {
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
-      border: 2px solid #facc15;
-      border-radius: 12px;
-      padding: 10px 14px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      text-align: left;
-      animation: popIn 0.4s ease;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.6);
-    }
-
-    /* PAUSE MODAL (Build & Synergy Inspector) */
-    #pause-screen { display: none; z-index: 140; }
-    .pause-modal {
-      background: linear-gradient(145deg, #0f172a 0%, #020617 100%);
-      border: 2px solid #38bdf8;
-      border-radius: 18px;
-      padding: 18px;
-      width: 92%;
-      max-width: 480px;
-      max-height: 85vh;
-      overflow-y: auto;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9), inset 0 1px 1px rgba(255,255,255,0.2);
-    }
-    .pause-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid rgba(56, 189, 248, 0.3);
-      padding-bottom: 8px;
-      margin-bottom: 12px;
-    }
-    .pause-title { font-size: 18px; font-weight: 900; color: #38bdf8; letter-spacing: 0.5px; }
-    .pause-section-title {
-      font-size: 12px;
-      font-weight: 900;
-      color: #facc15;
-      text-transform: uppercase;
-      margin: 10px 0 6px 0;
-      letter-spacing: 0.5px;
-    }
-    .pause-gear-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 6px;
-    }
-    .pause-gear-pill {
-      background: rgba(30, 41, 59, 0.85);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 8px;
-      padding: 6px 8px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      color: #f8fafc;
-    }
-    .pause-gear-pill.is-evo {
-      border-color: #facc15;
-      background: rgba(120, 53, 15, 0.4);
-      color: #fef08a;
-    }
-    .synergy-list {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-    .synergy-row {
-      background: rgba(15, 23, 42, 0.7);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px;
-      padding: 6px 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 10.5px;
-    }
-    .synergy-row.active {
-      border-color: #4ade80;
-      background: rgba(34, 197, 94, 0.15);
-    }
-  
-/* Mobile Responsive & Smooth Touch Scrolling for Modals */
-.tab-content {
-  overflow-y: auto;
-  overflow-x: hidden;
-  max-height: calc(100vh - 120px);
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  padding-bottom: 30px;
-}
-
-.upgrade-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 60vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  padding: 4px;
-}
-
-.pause-modal, .workshop-grid, .intro-modal, .chest-modal {
-  touch-action: pan-y !important;
-  -webkit-overflow-scrolling: touch !important;
-}
-
-#levelup-screen, #pause-screen, #chest-screen, #stage-transition-screen, #gameover-screen, #win-screen {
-  touch-action: pan-y;
-  -webkit-overflow-scrolling: touch;
-}
-
-
-/* Enhanced Level-Up Card System Styling */
-.levelup-modal-container {
-  border-color: #38bdf8 !important;
-  max-width: 520px;
-  width: 92%;
-  background: rgba(15, 23, 42, 0.98) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.95), 0 0 20px rgba(56, 189, 248, 0.3) !important;
-  padding: 18px !important;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.levelup-modal-title {
-  color: #38bdf8;
-  font-size: 22px;
-  font-weight: 900;
-  margin: 0;
-  text-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
-  letter-spacing: 0.5px;
-}
-
-.levelup-modal-subtitle {
-  color: #cbd5e1;
-  font-size: 13px;
-  margin: 4px 0 0 0;
-}
-
-.upgrade-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 58vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  padding: 4px;
-}
-
-.upgrade-card {
-  position: relative;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.99));
-  border: 2px solid #38bdf8;
-  border-radius: 14px;
-  padding: 12px 14px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  text-align: left;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.15);
-  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.2s, box-shadow 0.2s;
-  animation: cardSlideIn 0.3s ease-out forwards;
-}
-
-@keyframes cardSlideIn {
-  from { opacity: 0; transform: translateY(15px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.upgrade-card:hover, .upgrade-card:active {
-  transform: translateY(-2px) scale(1.02);
-  border-color: #7dd3fc;
-  box-shadow: 0 10px 25px rgba(56, 189, 248, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.3);
-}
-
-.upgrade-card.is-weapon {
-  border-color: #38bdf8;
-  background: linear-gradient(135deg, rgba(14, 116, 144, 0.35), rgba(15, 23, 42, 0.98));
-}
-
-.upgrade-card.is-passive {
-  border-color: #22c55e;
-  background: linear-gradient(135deg, rgba(21, 128, 61, 0.35), rgba(15, 23, 42, 0.98));
-}
-
-.upgrade-card.is-passive:hover {
-  border-color: #4ade80;
-  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.4);
-}
-
-.upgrade-card.is-evolution {
-  border-color: #f59e0b;
-  background: linear-gradient(135deg, rgba(180, 83, 9, 0.6), rgba(30, 58, 138, 0.95));
-  box-shadow: 0 0 25px rgba(245, 158, 11, 0.6), inset 0 1px 2px rgba(254, 240, 138, 0.4);
-  animation: cardSlideIn 0.3s ease-out forwards, pulseGoldBorder 1.2s infinite alternate;
-}
-
-@keyframes pulseGoldBorder {
-  0% { border-color: #f59e0b; box-shadow: 0 0 15px rgba(245, 158, 11, 0.5); }
-  100% { border-color: #fde047; box-shadow: 0 0 30px rgba(250, 204, 21, 0.8); }
-}
-
-.upgrade-card.is-bonus {
-  border-color: #ef4444;
-  background: linear-gradient(135deg, rgba(185, 28, 28, 0.35), rgba(15, 23, 42, 0.98));
-}
-
-.card-icon-wrapper {
-  position: relative;
-  width: 48px;
-  height: 48px;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
-}
-
-.card-icon {
-  font-size: 28px;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.9));
-}
-
-.card-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.card-header-line {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.card-badge {
-  font-size: 9px;
-  font-weight: 900;
-  padding: 2px 5px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.badge-weapon { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.5); }
-.badge-passive { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.5); }
-.badge-evo { background: rgba(245, 158, 11, 0.3); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.8); }
-.badge-bonus { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.5); }
-
-.card-title {
-  font-weight: 900;
-  font-size: 14.5px;
-  color: #f8fafc;
-  letter-spacing: 0.3px;
-}
-
-.card-stars {
-  font-size: 11px;
-  color: #facc15;
-  letter-spacing: 1px;
-}
-
-.card-level-tag {
-  font-size: 10.5px;
-  font-weight: 800;
-  color: #facc15;
-  background: rgba(0,0,0,0.5);
-  padding: 1px 5px;
-  border-radius: 4px;
-}
-
-.card-desc {
-  font-size: 12px;
-  color: #cbd5e1;
-  line-height: 1.3;
-  font-weight: 500;
-}
-
-.card-stat-boost {
-  font-size: 11px;
-  font-weight: 700;
-  margin-top: 1px;
-}
-
-.card-action-bar {
-  display: flex;
-  gap: 10px;
-  margin-top: 4px;
-}
-
-.btn-card-action {
-  flex: 1;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-weight: 900;
-  font-size: 13px;
-  cursor: pointer;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all 0.15s;
-}
-
-.btn-reroll {
-  background: linear-gradient(135deg, #1e293b, #334155);
-  color: #38bdf8;
-  border: 1.5px solid #38bdf8;
-}
-
-.btn-reroll:hover {
-  background: #334155;
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
-}
-
-.btn-reroll:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  border-color: #64748b;
-  color: #64748b;
-}
-
-.btn-skip {
-  background: linear-gradient(135deg, #27272a, #3f3f46);
-  color: #facc15;
-  border: 1.5px solid #eab308;
-}
-
-.btn-skip:hover {
-  background: #3f3f46;
-  box-shadow: 0 0 12px rgba(234, 179, 8, 0.4);
-}
-
-
-    .vignette-overlay {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none;
-      background: radial-gradient(circle at center, transparent 30%, rgba(2, 6, 23, 0.94) 85%);
-      z-index: 4;
-    }
-    #floating-ui-container {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none;
-      overflow: hidden;
-      z-index: 10;
-    }
-    .hud-btn-pause {
-      width: 44px;
-      height: 44px;
-      min-width: 44px;
-      min-height: 44px;
-      background: rgba(15, 23, 42, 0.85);
-      border: 2px solid #38bdf8;
-      border-radius: 12px;
-      color: #38bdf8;
-      font-size: 18px;
-      font-weight: 900;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      touch-action: none;
-    }
-    .hud-btn-pause:active { transform: scale(0.92); }
-    .floating-dmg-text {
-      position: absolute;
-      top: 0; left: 0;
-      font-family: system-ui, -apple-system, sans-serif;
-      font-weight: 900;
-      font-size: 14px;
-      text-shadow: 0 2px 6px #000, 0 0 10px rgba(0,0,0,0.8);
-      pointer-events: none;
-      white-space: nowrap;
-      will-change: transform, opacity;
-      z-index: 12;
-    }
-    .speech-bubble-overlay {
-      position: absolute;
-      top: 0; left: 0;
-      background: rgba(15, 23, 42, 0.92);
-      border: 2px solid #38bdf8;
-      border-radius: 10px;
-      padding: 3px 8px;
-      font-family: system-ui, -apple-system, sans-serif;
-      font-weight: 800;
-      font-size: 11px;
-      color: #fff;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.7);
-      pointer-events: none;
-      white-space: nowrap;
-      will-change: transform;
-      z-index: 14;
-    }
-    .pause-tabs-bar {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      padding-bottom: 8px;
-    }
-    .pause-tab-btn {
-      flex: 1;
-      padding: 8px 4px;
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      color: #94a3b8;
-      font-size: 11px;
-      font-weight: 800;
-      cursor: pointer;
-      text-align: center;
-    }
-    .pause-tab-btn.active {
-      background: #1e293b;
-      border-color: #38bdf8;
-      color: #38bdf8;
-      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
-    }
-    .pause-tab-content {
-      margin-bottom: 10px;
-    }
-    .option-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 8px 12px;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      font-size: 12px;
-      color: #e2e8f0;
-      font-weight: 700;
-    }
-    .slider-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .btn-opt-toggle {
-      background: #1e293b;
-      border: 1px solid #38bdf8;
-      color: #38bdf8;
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-size: 11px;
-      font-weight: 800;
-      cursor: pointer;
-    }
-    .guide-box {
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      padding: 10px;
-      font-size: 11px;
-      line-height: 1.5;
-      color: #cbd5e1;
-    }
-    .guide-box p { margin: 0 0 8px 0; }
-    .exit-confirm-box {
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid #ef4444;
-      border-radius: 10px;
-      padding: 12px;
-    }
-
-</style>
-</head>
-<body>
-<div id="game-container">
-  <div id="announcement" style="position: absolute; top: max(env(safe-area-inset-top, 12px), 36px); left: 50%; transform: translate(-50%, -10px) scale(0.95); opacity: 0; pointer-events: none; text-align: center; font-size: 13px; font-weight: 900; color: #38bdf8; background: rgba(15, 23, 42, 0.94); border: 1.5px solid #38bdf8; border-radius: 20px; padding: 6px 16px; box-shadow: 0 8px 25px rgba(0,0,0,0.7), 0 0 15px rgba(56, 189, 248, 0.25); transition: all 0.3s ease; z-index: 9999; white-space: nowrap; letter-spacing: 0.5px;"></div>
-    <canvas id="threeCanvas"></canvas>
-        <canvas id="gameCanvas"></canvas>
-    <div class="vignette-overlay"></div>
-    <div id="floating-ui-container"></div>
-  
-
-  <div id="ach-toast" style="position: absolute; top: max(env(safe-area-inset-top, 10px), 12px); right: 12px; z-index: 10000; display: flex; align-items: center; gap: 8px; background: rgba(15, 23, 42, 0.95); border: 1.5px solid #f59e0b; border-radius: 12px; padding: 8px 14px; box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 15px rgba(245, 158, 11, 0.3); transform: translateX(120%); opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none;">
-    <div id="toast-icon" style="font-size: 24px;">🏆</div>
-    <div>
-      <div class="toast-title">⭐ ODBLOKOWANO OSIĄGNIĘCIE!</div>
-      <div class="toast-name" id="toast-name">Drift Master DTA</div>
-    </div>
-  </div>
-
-  <div id="hud">
-    <div class="xp-bar-container">
-      <div id="xp-fill" class="xp-bar-fill"></div>
-    </div>
-  
-    <div class="hud-top-bar">
-      <div class="status-panel">
-        <!-- Left: Character, Level, Sector & Clock, Kills -->
-        <div class="status-panel-group">
-          <div id="badge-char" class="stat-badge badge-char">🚜 Piotr</div>
-          <div id="badge-lvl" class="stat-badge badge-lvl">⭐ LVL 1</div>
-          <div id="badge-sector" class="stat-badge" style="border-color: #f59e0b; color: #fef08a; font-weight: 900;">📍 S1 | ⏰ 02:00</div>
-          <div id="badge-clock" class="stat-badge badge-clock">🕒 03:15</div>
-          <div id="badge-kills" class="stat-badge" style="border-color: #ef4444; color: #fca5a5;">💀 0</div>
-        </div>
-        <!-- Right: Battery, Combo, Zoom, Pause button -->
-        <div class="status-panel-group" style="pointer-events: auto;">
-          <div id="badge-battery" class="stat-badge badge-battery">⚡ 100%</div>
-          <div id="badge-combo" class="stat-badge badge-combo">🔥 COMBO x1</div>
-          <div id="badge-zoom" class="stat-badge" onclick="toggleZoom()" style="border-color: #38bdf8; color: #7dd3fc; cursor: pointer;">🔍 <span id="badge-zoom-label">0.50x</span></div>
-          <div id="badge-pause" class="stat-badge" onclick="togglePause()" style="border-color: #a855f7; color: #e9d5ff; font-weight: 900; cursor: pointer;">⏸️ PAUZA</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Active Weapons list -->
-    <div id="weapons-hud" class="weapons-hud"></div>
-        <div style="display: flex; gap: 6px; align-items: center;">
-          <button id="hud-pause-btn" class="hud-btn-pause" onclick="togglePause()" testTag="btn_pause" title="Pauza / Opcje">⏸️</button>
-        </div>
-
-    <div id="boss-hp-container">
-      <div id="boss-name" class="boss-name-label">ALARM: ZASTĘPCA GRZESIEK</div>
-      <div class="boss-hp-track">
-        <div id="boss-hp-fill" class="boss-hp-fill"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="touch-controls">
-    <div id="joystick-zone" class="joystick-zone"></div>
-    <div id="joystick-base"></div>
-    <div id="joystick-thumb"></div>
-
-    <div class="action-zone">
-      <!-- 24h Driver Detention Special Attack -->
-      <div id="btn-detention" class="action-btn-secondary">
-        <span style="font-size: 16px;">⏱️</span>
-        <span>24H SAD</span>
-        <div id="detention-cd" class="btn-cd">18s</div>
-      </div>
-      <!-- Forklift Burst -->
-      <div id="btn-forklift" class="action-btn-secondary" style="background: radial-gradient(circle, #f59e0b, #b45309); border-color: #fef3c7;">
-        <span style="font-size: 16px;">🚜</span>
-        <span>WÓZEK</span>
-      </div>
-      <!-- Character Active Skill -->
-      <div id="btn-dash" class="action-btn">
-        <span id="skill-icon" style="font-size: 20px;">⚡</span>
-        <span id="skill-label">SKILL</span>
-        <div id="dash-cd" class="btn-cd">8s</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- POLSKIE INTRO: ABSURD & HUMOR NOCNEJ ZMIANY -->
-  <div id="intro-screen" class="screen-overlay" style="display: none;">
-    <div class="intro-modal">
-      <div class="intro-top-bar">
-        <div style="font-size: 15px; font-weight: 900; color: #f59e0b; display: flex; align-items: center; gap: 6px;">
-          <span>🎬</span> DTA GRANICZNA 8f: ODPRAWA 03:15
-        </div>
-        <div class="intro-meta-tags">
-          <div class="intro-meta-tag">⏱️ 03:15:22</div>
-          <div class="intro-meta-tag">❄️ -2.4°C</div>
-          <div id="intro-alert-tag" class="intro-meta-tag alert">🛑 STAN: ALARM CELNY</div>
-        </div>
-      </div>
-
-      <!-- Graphic Comic Scene Canvas/Stage -->
-      <div id="intro-art-stage" class="intro-art-stage">
-        <div id="intro-art-badge" class="intro-art-badge">📍 LOKACJA</div>
-        <div id="intro-art-visual" style="width: 100%; height: 100%; position: relative;"></div>
-        <div id="intro-art-satire" class="intro-art-satire">...</div>
-        <div id="intro-art-stamp" class="intro-art-stamp">PIECZĘĆ</div>
-      </div>
-
-      <!-- Dialogue Scene Box -->
-      <div id="intro-scene-box" class="intro-scene">
-        <div id="intro-speaker" class="intro-speaker">🎙️ DYSPOZYTOR BAZY</div>
-        <div id="intro-text" class="intro-text">...</div>
-      </div>
-
-      <div class="intro-buttons">
-        <button id="btn-intro-skip" class="btn-skip" onclick="skipIntroBtn()">POMIŃ INTRO</button>
-        <button id="btn-intro-next" class="btn-next" onclick="nextIntroBtn()">DALEJ ➔</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- START & CHARACTER SELECTION -->
-  <div id="start-screen" class="screen-overlay" style="display: none;">
-    <div class="card-modal">
-      <h1>🚜 DTA GRANICZNA 8f: NOCNA ZMIANA</h1>
-      <h2>Horde Survival w Hali Logistycznej</h2>
-
-      <div class="menu-tabs">
-        <button class="tab-btn active" onclick="switchTab('play')">🎮 GRA & POSTAĆ</button>
-        <button class="tab-btn" onclick="switchTab('workshop')">🛠️ WARSZTAT BHP</button>
-        <button class="tab-btn" onclick="switchTab('decrees')">📜 DECYZJE ZARZĄDU</button>
-        <button class="tab-btn" onclick="switchTab('evolutions')">⚙️ EWOLUCJE</button>
-        <button class="tab-btn" onclick="switchTab('dictionary')">📕 BESTIARIUSZ</button>
-        <button class="tab-btn" onclick="switchTab('scores')">🏆 WYNIKI</button>
-        <button class="tab-btn" onclick="switchTab('achievements')">⭐ OSIĄGNIĘCIA</button>
-      </div>
-
-      <!-- Tab: PLAY & CHARACTER SELECT -->
-      <div id="tab-play" class="tab-content active">
-        <!-- GAME MODE SELECTOR -->
-        <div class="char-section-title">⏱️ Tryb Rozgrywki:</div>
-        <div class="mode-selector">
-          <div class="mode-btn selected" id="mode-standard" onclick="selectGameMode('standard', this)">
-            <span>🕒 ZMIANA (10 MIN)</span>
-            <span style="font-size:8.5px; color:#cbd5e1;">5 Sektorów & Bossowie do 07:00</span>
-          </div>
-          <div class="mode-btn" id="mode-endless" onclick="selectGameMode('endless', this)">
-            <span>♾️ TRYB NIESKOŃCZONY</span>
-            <span style="font-size:8.5px; color:#fca5a5;">Nadgodziny 300% & Bezlimit fal!</span>
-          </div>
-        </div>
-
-        <!-- ARENA / MAP SELECTOR -->
-        <div class="char-section-title">📍 Wybór Hali / Areny:</div>
-        <div class="arena-selection-grid">
-          <div class="arena-card selected" id="arena-main" onclick="selectArena('main', this)">
-            <div class="arena-icon">🏭</div>
-            <div class="arena-name">Hala Główna 8f</div>
-            <div class="arena-perk">Klasyczne regały & doki</div>
-          </div>
-          <div class="arena-card" id="arena-freezer" onclick="selectArena('freezer', this)">
-            <div class="arena-icon">❄️</div>
-            <div class="arena-name">Chłodnia -25°C</div>
-            <div class="arena-perk">Śliski drift & farelki BHP</div>
-          </div>
-          <div class="arena-card" id="arena-crossdock" onclick="selectArena('crossdock', this)">
-            <div class="arena-icon">🏗️</div>
-            <div class="arena-name">Cross-Dock 24H</div>
-            <div class="arena-perk">Ruchome taśmy & TIR-y</div>
-          </div>
-        </div>
-
-        <div class="char-section-title">📦 Brygada Magazynowa & Konserwacja:</div>
-        <div class="char-selection-grid">
-          <div class="char-card selected" onclick="selectCharacter('piotr', this)">
-            <div class="char-header"><span>📦🐕</span> Piotr (Opiekun Kluski)</div>
-            <div class="char-skill">✨ Pasywka: <b>Kundel Kluska</b> (+35% ataku, pies przywołuje XP)<br>🔫 Skill: <b>Gaz + Metalowe Kulki & Kluska!</b></div>
-          </div>
-          <div class="char-card" onclick="selectCharacter('mirek', this)">
-            <div class="char-header"><span>🔧</span> Pan Mirek (Złota Rączka)</div>
-            <div class="char-skill">✨ Pasywka: <b>Naprawa na Trytytkę</b> (+0.6 HP/s, +35% DMG maszyn)<br>⚡ Skill: <b>Młot Udarowy & Iskry 360°</b></div>
-          </div>
-          <div class="char-card" onclick="selectCharacter('radek', this)">
-            <div class="char-header"><span>🚜</span> Radek (Weteran BT)</div>
-            <div class="char-skill">✨ Pasywka: <b>Drift na Epoksydzie</b> (+20% spd & krytyk wideł)<br>⚡ Skill: <b>Szarża Widłami</b> (taranuje hordy)</div>
-          </div>
-          <div class="char-card" onclick="selectCharacter('pawel', this)">
-            <div class="char-header"><span>🪵</span> Paweł (Ekspert EPAL)</div>
-            <div class="char-skill">✨ Pasywka: <b>Żelazny Chwyt EPAL</b> (+30% DMG, +20% HP baterii)<br>⚡ Skill: <b>Salwa Paletowa 360°</b> (deszcz palet)</div>
-          </div>
-          <div class="char-card" onclick="selectCharacter('marcin', this)">
-            <div class="char-header"><span>🧻</span> Marcin (Nocny Wojownik)</div>
-            <div class="char-skill">✨ Pasywka: <b>Zapas Velvet Max</b> (+50% zasięgu papieru)<br>⚡ Skill: <b>Bomba Papierowa</b> (12 wirujących rolek)</div>
-          </div>
-        </div>
-
-        <div class="char-section-title">🏢 Kadra, Biuro Celne & Centrala:</div>
-        <div class="char-selection-grid">
-          <div class="char-card" onclick="selectCharacter('klaus', this)">
-            <div class="char-header"><span>🇩🇪</span> Audytor Klaus (Centrala)</div>
-            <div class="char-skill">✨ Pasywka: <b>Porządek DIN</b> (+25% spd pocisków, 4 karty wyboru!)<br>⚡ Skill: <b>Czerwony Długopis Audytu</b> (laser kontroli)</div>
-          </div>
-          <div class="char-card" onclick="selectCharacter('kierownik_marcin', this)">
-            <div class="char-header"><span>📢</span> Kierownik Marcin</div>
-            <div class="char-skill">✨ Pasywka: <b>Autorytet Kiero</b> (+50% baterii, aura respektu)<br>⚡ Skill: <b>Megafon Dyscyplinarny</b> (ogłuszenie i 120 DMG)</div>
-          </div>
-          <div class="char-card" onclick="selectCharacter('przemek_biuro', this)">
-            <div class="char-header"><span>💻</span> Przemek z biura</div>
-            <div class="char-skill">✨ Pasywka: <b>Optymalizacja WMS</b> (+80% magnesu XP, +30% EXP)<br>⚡ Skill: <b>Przeciążenie Sieci WMS</b> (impuls danych)</div>
-          </div>
-          <div class="char-card" onclick="selectCharacter('ania_biuro', this)">
-            <div class="char-header"><span>📋</span> Ania z biura</div>
-            <div class="char-skill">✨ Pasywka: <b>Błyskawiczna Rewizja</b> (+40% szansy na krytyk)<br>⚡ Skill: <b>Blokada Celna SAD</b> (zamrożenie chmary na 4s)</div>
-          </div>
-          <div class="char-card" onclick="selectCharacter('grzesiek_zastepca', this)">
-            <div class="char-header"><span>☕</span> Grzesiek zastępca kiero</div>
-            <div class="char-skill">✨ Pasywka: <b>Kawa & Pancerz BHP</b> (-40% DMG, regeneracja)<br>⚡ Skill: <b>Kontrola BHP i Rampy</b> (fala uderzeniowa)</div>
-          </div>
-        </div>
-
-        <div class="story-box">
-          ⚠️ <b>Progresja Zmiany:</b> Co 2 minuty pojawia się potężny Boss. W trybie Standardowym walczysz do 07:00, w trybie Nieskończonym przetrwaj najdłużej w Nadgodzinach 300%!
-        </div>
-
-        <div class="sticky-start-wrapper"><button id="btn-start" class="btn-main" onclick="startGame()">PODBIJ KARTĘ (ROZPOCZNIJ MĘKĘ)</button></div>
-      </div>
-
-      <!-- Tab: WARSZTAT BHP (PERMANENT SHOP) -->
-      <div id="tab-workshop" class="tab-content">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <p style="margin: 0;">🛠️ <b>Warsztat Ulepszeń Wózka BT:</b></p>
-          <div id="shop-coins-display" style="color: #facc15; font-weight: 900; font-size: 13px;">💰 0 MONET</div>
-        </div>
-        <div id="workshop-container" class="workshop-grid"></div>
-      </div>
-
-      <!-- Tab: DECYZJE ZARZĄDU (LORE & SATIRE) -->
-      <div id="tab-decrees" class="tab-content">
-        <p>📜 <b>Oficjalny Kodeks & Uchwały Zarządu DTA:</b></p>
-        <div class="evo-grid">
-          <div class="decree-item">
-            <div class="decree-header"><span>💡 UCHWAŁA NR 1/2026</span> <span style="color: #f59e0b;">ZATWIERDZONA</span></div>
-            <div class="decree-body">„W celu optymalizacji kosztów energii nakazuje się wykręcenie co drugiej żarówki w Alei 4 i 6. Pracownicy mają korzystać ze zmysłu echolokacji lub blasku ekranu skanera.”</div>
-            <div class="decree-perk">⚡ Wpływ na grę: Ciemniejsze sektory, reflektor wózka rozświetla drogę!</div>
-          </div>
-          <div class="decree-item">
-            <div class="decree-header"><span>🧻 UCHWAŁA NR 2/2026</span> <span style="color: #f59e0b;">ZATWIERDZONA</span></div>
-            <div class="decree-body">„Papier toaletowy Velvet Max stanowi strategiczną rezerwę magazynu. Wydawanie pojedynczych listków wyłącznie za pisemną zgodą Dyspozytora Bazy.”</div>
-            <div class="decree-perk">⚡ Wpływ na grę: Rolki Velvet tworzą potężne barykady spowalniające wrogów!</div>
-          </div>
-          <div class="decree-item">
-            <div class="decree-header"><span>☕ UCHWAŁA NR 3/2026</span> <span style="color: #f59e0b;">ZATWIERDZONA</span></div>
-            <div class="decree-body">„Ekspres w socjalnym wymaga wrzucenia żetonu BHP. Kawa pita w biegu zwiększa prędkość wózka o 30% i chwilowo eliminuje potrzebę snu.”</div>
-            <div class="decree-perk">⚡ Wpływ na grę: Termosy z kawą regenerują akumulator i dają turbo-doładowanie!</div>
-          </div>
-          <div class="decree-item">
-            <div class="decree-header"><span>🦅 UCHWAŁA NR 4/2026</span> <span style="color: #ef4444;">STAN WYJĄTKOWY</span></div>
-            <div class="decree-body">„W razie niezapowiedzianego audytu KAS o godzinie 03:30, wszyscy operatorzy wózków zobowiązani są do natychmiastowego manewrowania w strefach rewizji.”</div>
-            <div class="decree-perk">⚡ Wpływ na grę: Strefy rewizji KAS wymagają unikania czerwonych okręgów!</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab: ENCYKLOPEDIA DTA & BESTIARIUSZ -->
-      <div id="tab-dictionary" class="tab-content">
-        <p>📕 <b>Bestiariusz i Unikalne Jednostki Magazynu DTA:</b></p>
-        <div class="evo-grid">
-          <div class="evo-card">
-            <div class="evo-formula">🇩🇪 <b>Dyrektor Klaus von Audit (Mega-Boss)</b></div>
-            <div>Centrala Frankfurt. Wzywa kordon audytorów DIN, rzuca formularzami RODO i wstrzymuje premie!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🩴 <b>Kierowca w Klapkach Kubota</b></div>
-            <div>Biega po rampie w szortach przy -2°C, machając listem CMR i pytając o toaletę.</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">📦 <b>Zbłąkany Karton B2C</b></div>
-            <div>Corrugated 3D karton z etykietą FRAGILE. Rozsypuje się przy kontakcie z widłami.</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🚛 <b>Kierowca TIR-a w Kracie</b></div>
-            <div>Czapka z daszkiem, koszula flanelowa, kubek czarnej kawy i szarża pod rampę.</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🚐 <b>Bus „Ja tylko dwie palety”</b></div>
-            <div>Biały bus ze stroboskopem na dachu i snopem świateł. Zrzuca palety pod koła.</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">📱 <b>Spedytor w Garniturze</b></div>
-            <div>Emituje fale dźwiękowe („Gdzie auto?!”) paraliżujące ruch na korytarzach.</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🏗️ <b>Pan Wiesław (Wysoki Skład - Boss)</b></div>
-            <div>Legendarny operator wózka bocznego. Zrzuca salwy palet z wysokości 12 metrów!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🦅 <b>Główny Inspektor KAS (Boss)</b></div>
-            <div>Pieczętuje wszystko czerwonym stemplem SAD i stawia laserowe bramki rewizyjne.</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🚽 <b>Mecha-ToiToi 3000 (Boss)</b></div>
-            <div>Zmutowana kabina sanitarna o napędzie biologicznym, odporna na spowolnienia.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab: EVOLUTIONS GUIDE -->
-      <div id="tab-evolutions" class="tab-content">
-        <p>💥 <b>Receptury Ewolucji Broni (Vampire Survivors Style):</b></p>
-        <div class="evo-grid">
-          <div class="evo-card">
-            <div class="evo-formula">🔦 Skaner Laserowy (MAX) + 🔋 Super Bateria</div>
-            <div>➔ <b>📡 Przemysłowa Bramka RFID:</b> Wirująca siatka laserowa i +50% do dropu XP!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🧻 Taśma Pakowa (MAX) + 📜 Certyfikat ISO (Magnes)</div>
-            <div>➔ <b>🌀 Automatyczna Owijarka:</b> Wirujący pierścień streczu unieruchamiający wrogów!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🪵 Ręczny Paleciak (MAX) + 🛢️ Smar Syntetyczny (Kawa)</div>
-            <div>➔ <b>🚜 Wózek BT High-Stack:</b> Zostawia plamy oleju i taranuje wrogów!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🧯 Gaśnica PPOŻ (MAX) + 📋 Protokół BHP (Widły)</div>
-            <div>➔ <b>❄️ System Zraszaczowy PPOŻ:</b> Co 10s zamraża wszystkich wrogów na hali!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🔗 Trytytki (MAX) + 📜 Certyfikat ISO (Magnes)</div>
-            <div>➔ <b>🔗 Stalowe Trytytki:</b> Zatrzymują wrogów i przebijają hordy!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🔪 Nóż Stanley (MAX) + 📋 Protokół BHP (Widły)</div>
-            <div>➔ <b>🔪 Ostrze Stanley Max:</b> Wirujące ostrza latające po całej hali!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">📌 Zszywacz Pneumatyczny (MAX) + 🔋 Super Bateria</div>
-            <div>➔ <b>💥 Pneumatyczny Działobit Zszywkowy:</b> Nieustanna nawałnica rykoszetujących klamer!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🔨 Młot Udarowy (MAX) + 🛢️ Smar Syntetyczny (Kawa)</div>
-            <div>➔ <b>🚜 Hydrauliczny Młot Burzący BT:</b> Potężne trzęsienie ziemi i fala uderzeniowa 360°!</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab: SCORES -->
-      <div id="tab-scores" class="tab-content">
-        <p>📊 <b>Lokalne Wyniki Zmian (Room Database):</b></p>
-        <div id="scores-container" class="scores-list">
-          <div style="color: #64748b; text-align: center; padding: 15px;">Brak zapisów. Rozegraj pierwszą rundę!</div>
-        </div>
-      </div>
-
-      <!-- Tab: ACHIEVEMENTS -->
-      <div id="tab-achievements" class="tab-content">
-        <p>🏆 <b>Osiągnięcia Magazynowe DTA:</b></p>
-        <div id="achievements-container" class="ach-grid"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- STAGE TRANSITION MODAL (SECTOR VICTORY POPUP) -->
-  <div id="stage-transition-screen" class="screen-overlay">
-    <div class="card-modal" style="border-color: #22c55e; text-align: center; max-width: 440px;">
-      <h1 style="color: #4ade80; font-size: 22px;">🎉 SEKTOR UKOŃCZONY!</h1>
-      <h2 id="transition-boss-title" style="color: #facc15; font-size: 15px; margin: 4px 0;">BOSS POKONANY: KIEROWNIK ZBIGNIEW</h2>
-      <div class="story-box" id="transition-desc-text" style="border-color: #22c55e; color: #86efac; margin: 8px 0; font-size: 11px;">
-        Przełamano opór na rampie załadunkowej! Wkraczasz w głąb hali: SEKTOR 2 - ALEJE WYSOKIEGO SKŁADU!
-      </div>
-      <div style="display: flex; justify-content: space-around; background: #0f172a; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); margin: 6px 0; font-size: 11px;">
-        <div>⚡ BATERIA: <b style="color:#4ade80;">+100% REGEN</b></div>
-        <div>💰 MONETY: <b style="color:#facc15;">+500 DTA</b></div>
-        <div>⭐ BONUS EXP: <b style="color:#38bdf8;">+300 XP</b></div>
-      </div>
-      <button id="btn-next-sector" class="btn-main" style="background: linear-gradient(180deg, #22c55e, #16a34a); color: #fff; margin-top: 8px;">WKRACZAJ DO NOWEGO SEKTORA ➔</button>
-    </div>
-  </div>
-
-  <!-- LEVEL UP SCREEN -->
-  <div id="levelup-screen" class="screen-overlay" style="display: none;">
-    <div class="card-modal levelup-modal-container">
-      <div class="card-modal-header">
-        <h1 class="levelup-modal-title">⭐ AWANS ZAWODOWY!</h1>
-        <p class="levelup-modal-subtitle">Wybierz kartę ulepszenia magazynowego wózka:</p>
-      </div>
-      <div id="upgrade-container" class="upgrade-list"></div>
-      <div class="card-action-bar">
-        <button id="btn-reroll-cards" class="btn-card-action btn-reroll" onclick="rerollLevelUpCards()">🔄 PRZELOSUJ (<span id="reroll-count">2</span>)</button>
-        <button id="btn-skip-card" class="btn-card-action btn-skip" onclick="skipLevelUpCard()">⏩ POMIŃ (+50💰)</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- GAME OVER SCREEN -->
-  <div id="gameover-screen" class="screen-overlay" style="display: none;">
-    <div class="card-modal" style="border-color: #ef4444;">
-      <h1 style="color: #ef4444;">💀 ROZŁADOWANY!</h1>
-      <h2>Wózek stanął dęba w Alei 6</h2>
-      <p id="gameover-stats">Przetrwano do: 04:22 | Punkty: 1250 | Poziom: 4</p>
-      <div class="story-box" style="border-color: #f59e0b; color: #fef08a;">
-        Grzesiek z BHP wręczył Ci mandat 500 PLN, a Udziałowiec Igor wykręcił ostatnią żarówkę nad Twoją głową.
-      </div>
-      <button id="btn-restart" class="btn-main">SPRÓBUJ PONOWNIE</button>
-    </div>
-  </div>
-
-  <!-- WIN SCREEN -->
-  <div id="win-screen" class="screen-overlay" style="display: none;">
-    <div class="card-modal" style="border-color: #22c55e;">
-      <h1 style="color: #4ade80;">🎉 07:00 - FAJRANT!</h1>
-      <h2>ODPRAWA ZAKOŃCZONA SUKCESEM!</h2>
-      <p id="win-stats">Przetrwałeś całą nocną zmianę! Zlikwidowane moby: 450</p>
-      <div class="story-box" style="border-color: #22c55e; color: #86efac;">
-        W socjalnym odnalazło się Kinder Bueno! Kontener przed 16:00 rozładowany, a ToiToi zneutralizowany. Jesteś legendą DTA Graniczna 8f!
-      </div>
-      <button id="btn-win-restart" class="btn-main" style="background: linear-gradient(180deg, #22c55e, #16a34a); color:#fff;">GRAJ OD NOWA</button>
-    </div>
-  </div>
-
-  <!-- LUCKY CARGO CHEST MODAL (Vampire Survivors Chest Opening) -->
-  <div id="chest-screen" class="screen-overlay" style="display: none;">
-    <div class="chest-modal">
-      <div class="chest-banner">✨ ZŁOTA PALETA SKARBÓW! ✨</div>
-      <div id="chest-anim-box" class="chest-visual-box">🎁</div>
-      <div id="chest-status-text" style="color: #fef08a; font-weight: 800; font-size: 14px; margin-bottom: 6px;">ODPIECZĘTOWYWANIE SAD...</div>
-      <div id="chest-slots" class="chest-slots-grid"></div>
-      <div style="display: flex; gap: 8px; justify-content: center; margin-top: 10px;">
-        <button id="btn-claim-chest" class="btn-main" style="background: linear-gradient(180deg, #facc15, #ca8a04); color: #000; font-weight: 900;">ODBIERZ ŁUP! 🚀</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- PAUSE / INVENTORY / SYNERGY SCREEN -->
-    <div id="pause-screen" class="screen-overlay" style="display: none;">
-    <div class="pause-modal">
-      <div class="pause-header">
-        <div class="pause-title">⏸️ RAPORT ZMIANY (PAUZA)</div>
-        <button onclick="togglePause()" style="background: #ef4444; border: none; color: #fff; border-radius: 8px; width: 32px; height: 32px; font-weight: 900; cursor: pointer;">✕</button>
-      </div>
-
-      <div class="pause-tabs-bar">
-        <button id="ptab-btn-options" class="pause-tab-btn active" onclick="showPauseTab('options')">⚙️ OPCJE</button>
-        <button id="ptab-btn-build" class="pause-tab-btn" onclick="showPauseTab('build')">⚔️ EKWIPUNEK</button>
-        <button id="ptab-btn-guide" class="pause-tab-btn" onclick="showPauseTab('guide')">❓ JAK GRAĆ</button>
-        <button id="ptab-btn-exit" class="pause-tab-btn" onclick="showPauseTab('exit')" style="border-color: #ef4444; color: #f87171;">🏠 MENU</button>
-      </div>
-
-      <!-- TAB 1: OPCJE -->
-      <div id="ptab-content-options" class="pause-tab-content" style="display: block;">
-        <div class="option-row">
-          <label>🔊 Efekty Dźwiękowe SFX:</label>
-          <div class="slider-wrapper">
-            <input type="range" min="0" max="100" value="100" id="opt-sfx-slider" oninput="updateSfxVolume(this.value)">
-            <span id="lbl-sfx-vol">100%</span>
-          </div>
-        </div>
-        <div class="option-row">
-          <label>🚜 Silnik Wózka BT:</label>
-          <div class="slider-wrapper">
-            <input type="range" min="0" max="100" value="80" id="opt-motor-slider" oninput="updateMotorVolume(this.value)">
-            <span id="lbl-motor-vol">80%</span>
-          </div>
-        </div>
-        <div class="option-row">
-          <label>🔍 Widok Kamery (Klaustrofobia):</label>
-          <div class="slider-wrapper">
-            <input type="range" min="260" max="520" value="380" id="opt-zoom-slider" oninput="updateCameraZoomSetting(this.value)">
-            <span id="lbl-zoom-vol">380px</span>
-          </div>
-        </div>
-        <div class="option-row">
-          <label>💡 Jakość Oświetlenia 3D & Cienie:</label>
-          <button id="btn-opt-shadows" onclick="toggle3DShadowsSetting()" class="btn-opt-toggle">Cienie 3D: WŁĄCZONE</button>
-        </div>
-        <div class="option-row">
-          <label>📳 Wibracje Haptyczne:</label>
-          <button id="btn-opt-vib" onclick="toggleVibrationSetting()" class="btn-opt-toggle">Wibracje: WŁĄCZONE</button>
-        </div>
-      </div>
-
-      <!-- TAB 2: EKWIPUNEK -->
-      <div id="ptab-content-build" class="pause-tab-content" style="display: none;">
-        <div id="pause-run-stats" class="pause-stats-grid">
-          <div>⏰ CZAS: <b id="pstat-time" style="color:#facc15;">00:00</b></div>
-          <div>💀 ZLIKWIDOWANI: <b id="pstat-kills" style="color:#ef4444;">0</b></div>
-          <div>⭐ POZIOM: <b id="pstat-lvl" style="color:#38bdf8;">1</b></div>
-        </div>
-        <div class="pause-section-title">⚔️ Aktywny Arsenał Magazyniera:</div>
-        <div id="pause-weapons-grid" class="pause-gear-grid"></div>
-        <div class="pause-section-title">🛡️ Przedmioty Pasywne:</div>
-        <div id="pause-passives-grid" class="pause-gear-grid"></div>
-        <div class="pause-section-title">💥 Przepisy Ewolucji Broni:</div>
-        <div id="pause-synergies-list" class="synergy-list"></div>
-      </div>
-
-      <!-- TAB 3: JAK GRAĆ -->
-      <div id="ptab-content-guide" class="pause-tab-content" style="display: none;">
-        <div class="guide-box">
-          <p>🕹️ <b>Sterowanie:</b> Użyj lewej gałki dotykowej lub klawiszy WASD / Strzałek do poruszania wózkiem lub magazynierem.</p>
-          <p>⚡ <b>Zdolność Specjalna:</b> Przycisk "KONTROLA BHP" wyzwala falę uderzeniową odpychającą wrogów.</p>
-          <p>💥 <b>Zagrożenia Magazynowe:</b> Uważaj na beczki ADR (Gaz, Kwas, Olej) — strzał w nie wywołuje obszarowy wybuch!</p>
-          <p>📦 <b>Przetrwanie Zmiany:</b> Co 2 minuty nadchodzi Boss (Inspektor PIP, Sanepid, Dyrektor KAS). Pokonaj go, aby odblokować Skrzynię Zmiany!</p>
-        </div>
-      </div>
-
-      <!-- TAB 4: WYJŚCIE DO MENU -->
-      <div id="ptab-content-exit" class="pause-tab-content" style="display: none;">
-        <div class="exit-confirm-box">
-          <p style="font-size: 13px; font-weight: 800; color: #f87171; text-align: center; margin-bottom: 10px;">⚠️ CZY NA PEWNO CHCESZ PRZERWAĆ ZMIANĘ?</p>
-          <p style="font-size: 11px; color: #cbd5e1; text-align: center; line-height: 1.4; margin-bottom: 14px;">
-            Bieżąca rozgrywka zostanie zakończona. Osiągnięcia i uzyskane monety DTA z obecnego biegu zostaną bezpiecznie zapisane w bazie danych Room DB.
-          </p>
-          <div style="display: flex; gap: 8px;">
-            <button onclick="confirmExitToMainMenu()" class="btn-main" style="background: linear-gradient(180deg, #ef4444, #991b1b); flex: 1;">TAK, WYJDŹ DO MENU 🏠</button>
-            <button onclick="showPauseTab('options')" class="btn-main" style="background: #334155; flex: 1;">WRÓĆ DO OPCJI ⚙️</button>
-          </div>
-        </div>
-      </div>
-
-      <div style="margin-top: 12px;">
-        <button onclick="togglePause()" class="btn-main" style="background: linear-gradient(180deg, #38bdf8, #0284c7); color: #fff;">POWRÓT DO GRY ▶️</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
 /* ==========================================================================
    DTA GRANICZNA 8F: MASSIVE HORDE SURVIVORS ENGINE WITH EVOLUTIONS & BOSSES
    ========================================================================== */
@@ -3363,142 +1353,6 @@ window.onRoomDataLoaded = function(data) {
   if (data.scores) { roomScores = data.scores; renderScoresTab(); }
   if (data.achievements) { roomAchievements = data.achievements; renderAchievementsTab(); }
 };
-
-// --- OPTIONS & PAUSE SYSTEM ---
-let sfxVolumeSetting = 1.0;
-let motorVolumeSetting = 0.8;
-let shadows3DSetting = true;
-let vibrationSetting = true;
-
-function showPauseTab(tabName) {
-  ['options', 'build', 'guide', 'exit'].forEach(t => {
-    const btn = document.getElementById('ptab-btn-' + t);
-    const content = document.getElementById('ptab-content-' + t);
-    if (btn) btn.classList.toggle('active', t === tabName);
-    if (content) content.style.display = (t === tabName) ? 'block' : 'none';
-  });
-  if (tabName === 'build') renderPauseScreen();
-}
-
-function updateSfxVolume(val) {
-  sfxVolumeSetting = val / 100.0;
-  const lbl = document.getElementById('lbl-sfx-vol');
-  if (lbl) lbl.innerText = val + '%';
-  if (sounds && sounds.setMasterVolume) sounds.setMasterVolume(sfxVolumeSetting);
-}
-
-function updateMotorVolume(val) {
-  motorVolumeSetting = val / 100.0;
-  const lbl = document.getElementById('lbl-motor-vol');
-  if (lbl) lbl.innerText = val + '%';
-  if (sounds && sounds.setMotorVolume) sounds.setMotorVolume(motorVolumeSetting);
-}
-
-function updateCameraZoomSetting(val) {
-  const lbl = document.getElementById('lbl-zoom-vol');
-  if (lbl) lbl.innerText = val + 'px';
-  if (window.Engine3D && window.Engine3D.setCameraZoom) {
-    window.Engine3D.setCameraZoom(val);
-  }
-}
-
-function toggle3DShadowsSetting() {
-  shadows3DSetting = !shadows3DSetting;
-  const btn = document.getElementById('btn-opt-shadows');
-  if (btn) btn.innerText = "Cienie 3D: " + (shadows3DSetting ? "WŁĄCZONE" : "WYŁĄCZONE");
-  if (window.Engine3D && window.Engine3D.dirLight) {
-    window.Engine3D.dirLight.castShadow = shadows3DSetting;
-  }
-}
-
-function toggleVibrationSetting() {
-  vibrationSetting = !vibrationSetting;
-  const btn = document.getElementById('btn-opt-vib');
-  if (btn) btn.innerText = "Wibracje: " + (vibrationSetting ? "WŁĄCZONE" : "WYŁĄCZONE");
-}
-
-function confirmExitToMainMenu() {
-  if (gameState === STATE.PAUSED) {
-    document.getElementById('pause-screen').style.display = 'none';
-    gameState = STATE.START;
-    document.getElementById('start-screen').style.display = 'flex';
-    if (window.AndroidBridge && window.AndroidBridge.saveGameScore) {
-      try {
-        window.AndroidBridge.saveGameScore(score, kills, playerLevel, Math.floor(gameTime), "00:00", false);
-      } catch(e) {}
-    }
-  }
-}
-
-// Keyboard shortcuts for Pause (ESC / P)
-window.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape' || e.code === 'KeyP') {
-    if (gameState === STATE.PLAYING || gameState === STATE.PAUSED) {
-      togglePause();
-    }
-  }
-});
-
-// Floating UI Overlay updating (Damage texts & Speech Bubbles)
-function updateFloatingUiOverlays() {
-  const container = document.getElementById('floating-ui-container');
-  if (!container) return;
-
-  if (typeof floatingTexts !== 'undefined') {
-    for (let i = 0; i < floatingTexts.length; i++) {
-      const ft = floatingTexts[i];
-      let el = document.getElementById('ft_el_' + i);
-      if (ft && ft.active) {
-        if (!el) {
-          el = document.createElement('div');
-          el.id = 'ft_el_' + i;
-          el.className = 'floating-dmg-text';
-          container.appendChild(el);
-        }
-        const coords = window.Engine3D ? window.Engine3D.getScreenCoords(ft.x, ft.y, 22) : { x: 0, y: 0, visible: false };
-        if (coords.visible) {
-          el.innerText = ft.text;
-          el.style.color = ft.color;
-          el.style.display = 'block';
-          el.style.transform = 'translate3d(' + Math.round(coords.x) + 'px, ' + Math.round(coords.y) + 'px, 0) translate(-50%, -100%) scale(' + (1 + (ft.life / ft.maxLife) * 0.2) + ')';
-          el.style.opacity = (1 - (ft.life / ft.maxLife)).toFixed(2);
-        } else {
-          el.style.display = 'none';
-        }
-      } else if (el) {
-        el.style.display = 'none';
-      }
-    }
-  }
-
-  if (typeof speechBubbles !== 'undefined') {
-    for (let i = 0; i < speechBubbles.length; i++) {
-      const sb = speechBubbles[i];
-      let el = document.getElementById('sb_el_' + i);
-      if (sb && sb.active) {
-        if (!el) {
-          el = document.createElement('div');
-          el.id = 'sb_el_' + i;
-          el.className = 'speech-bubble-overlay';
-          container.appendChild(el);
-        }
-        const coords = window.Engine3D ? window.Engine3D.getScreenCoords(sb.x, sb.y, 36) : { x: 0, y: 0, visible: false };
-        if (coords.visible) {
-          el.innerText = sb.text;
-          el.style.color = sb.color || '#ffffff';
-          el.style.borderColor = sb.color || '#38bdf8';
-          el.style.display = 'block';
-          el.style.transform = 'translate3d(' + Math.round(coords.x) + 'px, ' + Math.round(coords.y) + 'px, 0) translate(-50%, -100%)';
-        } else {
-          el.style.display = 'none';
-        }
-      } else if (el) {
-        el.style.display = 'none';
-      }
-    }
-  }
-}
-
 window.onAndroidReady = function() {
   console.log("ANDROID READY SIGNAL RECEIVED");
   resizeCanvas(); // One more resize when Android is ready
@@ -4742,142 +2596,6 @@ function updateIntroView() {
   background: #3f3f46;
   box-shadow: 0 0 12px rgba(234, 179, 8, 0.4);
 }
-
-
-    .vignette-overlay {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none;
-      background: radial-gradient(circle at center, transparent 30%, rgba(2, 6, 23, 0.94) 85%);
-      z-index: 4;
-    }
-    #floating-ui-container {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none;
-      overflow: hidden;
-      z-index: 10;
-    }
-    .hud-btn-pause {
-      width: 44px;
-      height: 44px;
-      min-width: 44px;
-      min-height: 44px;
-      background: rgba(15, 23, 42, 0.85);
-      border: 2px solid #38bdf8;
-      border-radius: 12px;
-      color: #38bdf8;
-      font-size: 18px;
-      font-weight: 900;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      touch-action: none;
-    }
-    .hud-btn-pause:active { transform: scale(0.92); }
-    .floating-dmg-text {
-      position: absolute;
-      top: 0; left: 0;
-      font-family: system-ui, -apple-system, sans-serif;
-      font-weight: 900;
-      font-size: 14px;
-      text-shadow: 0 2px 6px #000, 0 0 10px rgba(0,0,0,0.8);
-      pointer-events: none;
-      white-space: nowrap;
-      will-change: transform, opacity;
-      z-index: 12;
-    }
-    .speech-bubble-overlay {
-      position: absolute;
-      top: 0; left: 0;
-      background: rgba(15, 23, 42, 0.92);
-      border: 2px solid #38bdf8;
-      border-radius: 10px;
-      padding: 3px 8px;
-      font-family: system-ui, -apple-system, sans-serif;
-      font-weight: 800;
-      font-size: 11px;
-      color: #fff;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.7);
-      pointer-events: none;
-      white-space: nowrap;
-      will-change: transform;
-      z-index: 14;
-    }
-    .pause-tabs-bar {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      padding-bottom: 8px;
-    }
-    .pause-tab-btn {
-      flex: 1;
-      padding: 8px 4px;
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      color: #94a3b8;
-      font-size: 11px;
-      font-weight: 800;
-      cursor: pointer;
-      text-align: center;
-    }
-    .pause-tab-btn.active {
-      background: #1e293b;
-      border-color: #38bdf8;
-      color: #38bdf8;
-      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
-    }
-    .pause-tab-content {
-      margin-bottom: 10px;
-    }
-    .option-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 8px 12px;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      font-size: 12px;
-      color: #e2e8f0;
-      font-weight: 700;
-    }
-    .slider-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .btn-opt-toggle {
-      background: #1e293b;
-      border: 1px solid #38bdf8;
-      color: #38bdf8;
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-size: 11px;
-      font-weight: 800;
-      cursor: pointer;
-    }
-    .guide-box {
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      padding: 10px;
-      font-size: 11px;
-      line-height: 1.5;
-      color: #cbd5e1;
-    }
-    .guide-box p { margin: 0 0 8px 0; }
-    .exit-confirm-box {
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid #ef4444;
-      border-radius: 10px;
-      padding: 12px;
-    }
 
 </style>
     `;
@@ -9269,13 +6987,790 @@ function render(dt = 0.016) {
       kluska,
       screenShake,
       gameTime,
-      obstacles,
-      adrBarrels
+      obstacles
     });
-    updateFloatingUiOverlays();
-  } else if (window.Engine3D && !window.Engine3D.active) {
-    window.Engine3D.init();
+    if (ctx && canvas) {
+      ctx.clearRect(0, 0, gameWidth, gameHeight);
+      render2DOverlays(dt);
+    }
+    return;
   }
+
+  if (!ctx || !canvas) return;
+  const sec = (typeof WAREHOUSE_SECTORS !== 'undefined') ? (WAREHOUSE_SECTORS[currentSectorIndex] || WAREHOUSE_SECTORS[0]) : { floorColor: '#030712', gridColor: '#1e293b' };
+  ctx.save();
+  ctx.fillStyle = sec.floorColor || '#030712';
+  ctx.fillRect(0, 0, gameWidth, gameHeight);
+
+  const zoom = Math.max(0.01, camera.zoom || 0.5);
+  const viewW = gameWidth / zoom;
+  const viewH = gameHeight / zoom;
+  const fontScale = 1.0 / zoom;
+
+  // Apply Camera Zoom & Shake & Translation
+  ctx.scale(zoom, zoom);
+  const shakeX = (typeof screenShake !== 'undefined' && screenShake > 0) ? (Math.random() * screenShake - screenShake / 2) : 0;
+  const shakeY = (typeof screenShake !== 'undefined' && screenShake > 0) ? (Math.random() * screenShake - screenShake / 2) : 0;
+  
+  const camX = isNaN(camera.x) ? 0 : camera.x;
+  const camY = isNaN(camera.y) ? 0 : camera.y;
+  ctx.translate(-camX + shakeX, -camY + shakeY);
+
+  // 1. Draw High-Contrast Epoxy WarIndustrial Polished Epoxy Warehouse Floor (No Grid)
+  const floorGloss = ctx.createLinearGradient(camera.x, camera.y, camera.x + viewW, camera.y + viewH);
+  floorGloss.addColorStop(0, "rgba(255, 255, 255, 0.02)");
+  floorGloss.addColorStop(0.5, "rgba(255, 255, 255, 0.04)");
+  floorGloss.addColorStop(1, "rgba(0, 0, 0, 0.06)");
+  ctx.fillStyle = floorGloss;
+  ctx.fillRect(camera.x, camera.y, viewW, viewH);
+
+  // Stenciled Transport Boundary Markings (clean, sparse industrial walkways instead of grid)
+  ctx.fillStyle = "rgba(234, 179, 8, 0.25)";
+  const laneY = 960;
+  if (laneY >= camera.y - 20 && laneY <= camera.y + viewH + 20) {
+    ctx.fillRect(camera.x, laneY, viewW, 6);
+  }
+  // 2. Overhead Industrial Fluorescent Light Cones
+  for (let i = 0; i < warehouseLights.length; i++) {
+    const l = warehouseLights[i];
+    if (l.x > camera.x - 180 && l.x < camera.x + viewW + 180 && l.y > camera.y - 180 && l.y < camera.y + viewH + 180) {
+      const lampGrad = ctx.createRadialGradient(l.x, l.y, 10, l.x, l.y, 150);
+      const intensity = 0.09 + Math.sin(gameTime * 3 + (l.flicker || 0) * 10) * 0.025;
+      let parsedColor = `rgba(56, 189, 248, ${intensity})`;
+      if (l.color && l.color.startsWith('#')) {
+        let h = l.color;
+        let r = parseInt(h.slice(1, 3), 16) || 255;
+        let g = parseInt(h.slice(3, 5), 16) || 255;
+        let b = parseInt(h.slice(5, 7), 16) || 255;
+        parsedColor = `rgba(${r}, ${g}, ${b}, ${intensity})`;
+      } else if (l.color) {
+        parsedColor = l.color.replace('rgb(', 'rgba(').replace(')', `, ${intensity})`).replace('rgbaa', 'rgba');
+      }
+      lampGrad.addColorStop(0, parsedColor);
+      lampGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = lampGrad;
+      ctx.beginPath(); ctx.arc(l.x, l.y, 150, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // 3. Coolant & Hydraulic Oil Puddles (Iridescent Sheen)
+  for (let i = 0; i < warehousePuddles.length; i++) {
+    const pud = warehousePuddles[i];
+    if (pud.x > camera.x - 100 && pud.x < camera.x + viewW + 100 && pud.y > camera.y - 60 && pud.y < camera.y + viewH + 60) {
+      ctx.fillStyle = pud.color;
+      ctx.beginPath();
+      ctx.ellipse(pud.x, pud.y, pud.rx, pud.ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  }
+
+  // 3.4. Crimsonland Permanent Splatter Canvas (Optimized Sub-Region Draw)
+  if (typeof splatterCanvas !== 'undefined') {
+    const sx = Math.max(0, Math.min(ARENA_WIDTH - 1, camera.x - 50));
+    const sy = Math.max(0, Math.min(ARENA_HEIGHT - 1, camera.y - 50));
+    const sw = Math.min(viewW + 100, ARENA_WIDTH - sx);
+    const sh = Math.min(viewH + 100, ARENA_HEIGHT - sy);
+    if (sw > 0 && sh > 0) {
+      ctx.drawImage(splatterCanvas, sx, sy, sw, sh, sx, sy, sw, sh);
+    }
+  }
+  updateAndRenderGibs(dt, ctx);
+  updateAndRenderPowerUps(dt, ctx);
+  updateAndRenderEnvironment(dt, ctx);
+  
+  // 3.5. Crimsonland Blood & Epoxy Stains
+  for (let i = 0; i < bloodStains.length; i++) {
+    const bs = bloodStains[i];
+    if (bs.x > camera.x - 60 && bs.x < camera.x + viewW + 60 && bs.y > camera.y - 60 && bs.y < camera.y + viewH + 60) {
+      ctx.save();
+      ctx.translate(bs.x, bs.y);
+      ctx.rotate(bs.rot);
+      ctx.fillStyle = bs.color;
+      ctx.globalAlpha = bs.life * 0.7;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, bs.radius, bs.radius * 0.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Splatter dots
+      ctx.beginPath();
+      ctx.arc(bs.radius * 0.8, bs.radius * 0.4, bs.radius * 0.25, 0, Math.PI * 2);
+      ctx.arc(-bs.radius * 0.7, -bs.radius * 0.3, bs.radius * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+      ctx.restore();
+    }
+  }
+
+  // 4. Industrial Floor Safety Lanes (DTA Forklift Highway)
+  ctx.strokeStyle = 'rgba(245, 158, 11, 0.18)';
+  ctx.lineWidth = 4;
+  ctx.setLineDash([24, 18]);
+  for (let x = 620; x < ARENA_WIDTH; x += 520) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, ARENA_HEIGHT); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  // 4.5. Dynamic Conveyor Belts (Cross-Dock Arena)
+  for (let i = 0; i < warehouseConveyors.length; i++) {
+    const cb = warehouseConveyors[i];
+    if (cb.x + cb.w > camera.x && cb.x < camera.x + viewW && cb.y + cb.h > camera.y && cb.y < camera.y + viewH) {
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(cb.x, cb.y, cb.w, cb.h);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(cb.x, cb.y, cb.w, cb.h);
+
+      // Rollers & animated directional arrows
+      ctx.fillStyle = '#0f172a';
+      const isHorizontal = Math.abs(cb.vx) > Math.abs(cb.vy);
+      if (isHorizontal) {
+        const offset = ((gameTime * cb.vx) % 24 + 24) % 24;
+        for (let rx = cb.x + offset; rx < cb.x + cb.w; rx += 24) {
+          ctx.fillRect(rx, cb.y + 2, 4, cb.h - 4);
+        }
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 12px sans-serif';
+        const arrow = cb.vx > 0 ? '➔ ➔ ➔' : '⬅ ⬅ ⬅';
+        ctx.fillText(arrow, cb.x + cb.w / 2 - 24, cb.y + cb.h / 2 + 4);
+      } else {
+        const offset = ((gameTime * cb.vy) % 24 + 24) % 24;
+        for (let ry = cb.y + offset; ry < cb.y + cb.h; ry += 24) {
+          ctx.fillRect(cb.x + 2, ry, cb.w - 4, 4);
+        }
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 12px sans-serif';
+        const arrow = cb.vy > 0 ? '⬇' : '⬆';
+        ctx.fillText(arrow, cb.x + cb.w / 2 - 6, cb.y + cb.h / 2 + 4);
+      }
+    }
+  }
+
+  // 4.6. Warehouse Heating Fans (Freezer Arena)
+  for (let i = 0; i < warehouseHeaters.length; i++) {
+    const h = warehouseHeaters[i];
+    if (h.x > camera.x - 200 && h.x < camera.x + viewW + 200 && h.y > camera.y - 200 && h.y < camera.y + viewH + 200) {
+      const heatGrad = ctx.createRadialGradient(h.x, h.y, 10, h.x, h.y, h.radius);
+      heatGrad.addColorStop(0, 'rgba(249, 115, 22, 0.4)');
+      heatGrad.addColorStop(0.7, 'rgba(245, 158, 11, 0.15)');
+      heatGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = heatGrad;
+      ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2); ctx.fill();
+
+      // Heater Box Unit
+      ctx.fillStyle = '#ea580c';
+      ctx.fillRect(h.x - 18, h.y - 18, 36, 36);
+      ctx.strokeStyle = '#fef08a';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(h.x - 18, h.y - 18, 36, 36);
+
+      // Rotating fan blades
+      ctx.save();
+      ctx.translate(h.x, h.y);
+      ctx.rotate(gameTime * 6);
+      ctx.font = '18px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('♨️', 0, 1);
+      ctx.restore();
+
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillStyle = '#fef08a';
+      ctx.fillText('NAGRZEWNICA', h.x - 34, h.y + 30);
+    }
+  }
+
+  // 5. Floor Stencils & Markings (BHP & DTA Warning Zones)
+  for (let i = 0; i < warehouseStencils.length; i++) {
+    const st = warehouseStencils[i];
+    if (st.x > camera.x - 200 && st.x < camera.x + viewW + 200 && st.y > camera.y - 100 && st.y < camera.y + viewH + 100) {
+      ctx.font = st.font;
+      ctx.fillStyle = st.color;
+      ctx.fillText(st.text, st.x, st.y);
+    }
+  }
+
+  // 6. Loading Docks along North Wall (Bramy Załadunkowe DTA)
+  for (let i = 0; i < warehouseDocks.length; i++) {
+    const dock = warehouseDocks[i];
+    if (dock.x + dock.w > camera.x && dock.x < camera.x + viewW && dock.y + dock.h > camera.y && dock.y < camera.y + viewH) {
+      // Dock Bay Body
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(dock.x, dock.y, dock.w, dock.h);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(dock.x, dock.y, dock.w, dock.h);
+
+      // Segmented Metal Roll-up Door Shutter
+      ctx.fillStyle = '#1e293b';
+      for (let sy = 8; sy < dock.h - 12; sy += 9) {
+        ctx.fillRect(dock.x + 8, sy, dock.w - 16, 7);
+      }
+
+      // Yellow/Black Chevron Hazard Edge
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(dock.x + 4, dock.h - 8, dock.w - 8, 8);
+
+      // Dock Title & LED status indicator
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillText(dock.title, dock.x + 12, 22);
+
+      // Blinking Dock LED
+      const ledColor = dock.active ? (Math.sin(gameTime * 4) > 0 ? '#ef4444' : '#7f1d1d') : '#22c55e';
+      ctx.fillStyle = ledColor;
+      ctx.beginPath();
+      ctx.arc(dock.x + dock.w - 16, 20, 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 7. Arena Perimeter Industrial Hazard Border
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 8;
+  ctx.strokeRect(4, 4, ARENA_WIDTH - 8, ARENA_HEIGHT - 8);
+
+  // 8. Drift Tyre Skid Marks on Floor
+  for (let i = 0; i < skidMarks.length; i++) {
+    const s = skidMarks[i];
+    if (s.x > camera.x - 40 && s.x < camera.x + viewW + 40 && s.y > camera.y - 40 && s.y < camera.y + viewH + 40) {
+      const alpha = (s.life / s.maxLife) * 0.5;
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.angle);
+      ctx.fillStyle = `rgba(0, 0, 0, ${alpha})`;
+      ctx.fillRect(-14, -10, 16, 4);
+      ctx.fillRect(-14, 7, 16, 4);
+      ctx.restore();
+    }
+  }
+
+  // 11. Real-time Player Headlights Cone
+  const headDist = 280;
+  const headSpread = 0.54;
+  const hGrad = ctx.createRadialGradient(
+    player.x, player.y, 20,
+    player.x + Math.cos(player.angle) * headDist * 0.7,
+    player.y + Math.sin(player.angle) * headDist * 0.7,
+    headDist
+  );
+  hGrad.addColorStop(0, 'rgba(254, 240, 138, 0.4)');
+  hGrad.addColorStop(0.5, 'rgba(254, 240, 138, 0.14)');
+  hGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
+  ctx.fillStyle = hGrad;
+  ctx.beginPath();
+  ctx.moveTo(player.x, player.y);
+  ctx.arc(player.x, player.y, headDist, player.angle - headSpread, player.angle + headSpread);
+  ctx.closePath();
+  ctx.fill();
+
+  // 12. Amber Flare Floor Beacon
+  const beaconAlpha = 0.24 + Math.sin(gameTime * 14) * 0.14;
+  const bGrad = ctx.createRadialGradient(player.x, player.y, 4, player.x, player.y, 130);
+  bGrad.addColorStop(0, `rgba(245, 158, 11, ${beaconAlpha})`);
+  bGrad.addColorStop(1, 'rgba(245, 158, 11, 0)');
+  ctx.fillStyle = bGrad;
+  ctx.beginPath(); ctx.arc(player.x, player.y, 130, 0, Math.PI * 2); ctx.fill();
+  cinemaPipeline.renderPostProcess(ctx, player.x, player.y, player.angle, screenShake, gameTime);
+
+
+  // ============================================================================
+  // 2.5D ISOMETRIC / AXONOMETRIC DEPTH-SORTED SCENE GRAPH (Y-SORTING)
+  // ============================================================================
+  const renderList = [];
+
+  // A. 3D Warehouse Obstacles (Towering Racks, Stacked Pallets, Toi-Toi)
+  for (let i = 0; i < obstacles.length; i++) {
+    const o = obstacles[i];
+    if (o.x + o.w > camera.x - 40 && o.x < camera.x + viewW + 40 &&
+        o.y + o.h > camera.y - 40 && o.y < camera.y + viewH + 40) {
+      renderList.push({
+        sortY: o.y + o.h,
+        fn: () => {
+          if (o.type === 'rack') {
+            ctx.drawImage(rackCanvas, o.x - 8, o.y - 8);
+          } else if (o.type === 'pallet_stack') {
+            ctx.drawImage(palletStackCanvas, o.x - 4, o.y - 4);
+          } else if (o.type === 'toitoi_station') {
+            // 3D Extruded ToiToi Station
+            ctx.fillStyle = 'rgba(0,0,0,0.55)';
+            ctx.fillRect(o.x + 8, o.y + 12, o.w + 10, o.h + 8);
+            ctx.fillStyle = '#15803d';
+            ctx.fillRect(o.x, o.y, o.w, o.h);
+            ctx.fillStyle = '#22c55e'; // 3D Roof
+            ctx.fillRect(o.x, o.y - 12, o.w, 14);
+            ctx.strokeStyle = '#4ade80';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(o.x, o.y, o.w, o.h);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '900 11px sans-serif';
+            ctx.fillText('TOI-TOI', o.x + 6, o.y + 24);
+          }
+        }
+      });
+    }
+  }
+
+  // B. 3D Breakable Warehouse Props
+  for (let i = 0; i < mapProps.length; i++) {
+    const p = mapProps[i];
+    if (p.x > camera.x - 60 && p.x < camera.x + viewW + 60 &&
+        p.y > camera.y - 60 && p.y < camera.y + viewH + 60) {
+      renderList.push({
+        sortY: p.y + p.radius,
+        fn: () => drawSingleMapProp(ctx, p)
+      });
+    }
+  }
+
+  // C. 3D Hovering Pickups (Barcodes, Coffee, Sandwiches)
+  for (let i = 0; i < dropItems.length; i++) {
+    const it = dropItems[i];
+    if (it.x > camera.x - 30 && it.x < camera.x + viewW + 30 &&
+        it.y > camera.y - 30 && it.y < camera.y + viewH + 30) {
+      renderList.push({
+        sortY: it.y,
+        fn: () => drawSingleDropItem(ctx, it, fontScale)
+      });
+    }
+  }
+
+  // D. 2.5D Animated Enemies (Swarms, Vans, Workers, Guards)
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    if (e.x + 80 > camera.x && e.x - 80 < camera.x + viewW &&
+        e.y + 80 > camera.y && e.y - 80 < camera.y + viewH) {
+      renderList.push({
+        sortY: e.y + (e.info.radius || 15) * 0.7,
+        fn: () => drawSingleEnemy(ctx, e, viewW, viewH)
+      });
+    }
+  }
+
+  // E. 2.5D Toyota BT Industrial Forklift Player
+  renderList.push({
+    sortY: player.y + (player.isForklift ? 16 : 10),
+    fn: () => draw25DPlayerForklift(ctx)
+  });
+
+  // F. Kluska Companion Dog
+  if (typeof kluska !== 'undefined' && kluska && kluska.active) {
+    renderList.push({
+      sortY: kluska.y + 8,
+      fn: () => drawKluska(ctx)
+    });
+  }
+
+  // SORT BY Y: Objects furthest away drawn first, nearest objects overlap them in 3D!
+  renderList.sort((a, b) => a.sortY - b.sortY);
+
+  // RENDER COMPLETE 2.5D SCENE GRAPH
+  for (let i = 0; i < renderList.length; i++) {
+    renderList[i].fn();
+  }
+
+  // 15. Draw Stretch Aura
+  if (weapons.stretchAura.level > 0) {
+    const count = weapons.stretchAura.count;
+    const rad = weapons.stretchAura.radius;
+    for (let i = 0; i < count; i++) {
+      const a = weapons.stretchAura.angle + (i * (Math.PI * 2 / count));
+      const ax = player.x + Math.cos(a) * rad;
+      const ay = player.y + Math.sin(a) * rad;
+      ctx.fillStyle = weapons.stretchAura.isEvo ? '#38bdf8' : '#e2e8f0';
+      ctx.beginPath(); ctx.arc(ax, ay, 11, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = weapons.stretchAura.isEvo ? '#bae6fd' : '#ffffff';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+    }
+  }
+
+  // 16. Draw Projectiles
+  for (let i = 0; i < projectiles.length; i++) {
+    const p = projectiles[i];
+    if (p.type === 'laser') {
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = weapons.scanner.isEvo ? 7 : 3.5;
+      ctx.beginPath(); ctx.moveTo(p.x1, p.y1); ctx.lineTo(p.x2, p.y2); ctx.stroke();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = weapons.scanner.isEvo ? 3 : 1.5;
+      ctx.beginPath(); ctx.moveTo(p.x1, p.y1); ctx.lineTo(p.x2, p.y2); ctx.stroke();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(p.x2 - 10, p.y2 - 10, 20, 20);
+    } else if (p.type === 'gas_cloud') {
+      const alpha = (p.life / (p.maxLife || 1.5)) * 0.45;
+      const gGrad = ctx.createRadialGradient(p.x, p.y, 5, p.x, p.y, p.radius);
+      gGrad.addColorStop(0, `rgba(234, 179, 8, ${alpha})`);
+      gGrad.addColorStop(0.6, `rgba(163, 230, 53, ${alpha * 0.7})`);
+      gGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = gGrad;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill();
+    } else if (p.type === 'metal_bb') {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath(); ctx.arc(0, 0, 4.5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+    } else if (p.type === 'pallet') {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot || 0);
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(-16, -12, 32, 24);
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-16, -12, 32, 24);
+      ctx.fillStyle = '#fef3c7';
+      ctx.font = 'bold 8.5px sans-serif';
+      ctx.fillText('EPAL', -11, 3);
+      ctx.restore();
+    } else if (p.type === 'oil_trail') {
+      ctx.fillStyle = `rgba(15, 23, 42, ${p.life / 4.0})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 25, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (p.type === 'kas_red_zone') {
+      ctx.fillStyle = `rgba(239, 68, 68, ${0.15 + Math.sin(gameTime * 10) * 0.1})`;
+      ctx.fillRect(p.x - p.radius, p.y - p.radius, p.radius * 2, p.radius * 2);
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(p.x - p.radius, p.y - p.radius, p.radius * 2, p.radius * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '16px Arial';
+      ctx.fillText(`REWIZJA: ${Math.ceil(p.life)}s`, p.x - 40, p.y);
+    } else if (p.type === 'enemy_shoot') {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot || 0);
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(-12, -8, 24, 16);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '8px sans-serif';
+      ctx.fillText('BRAK', -10, -1);
+      ctx.fillText('DOK.', -10, 6);
+      ctx.restore();
+    } else if (p.type === 'zip_tie') {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot || 0);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-6, -2, 12, 4);
+      ctx.fillStyle = p.isEvo ? '#ef4444' : '#f8fafc';
+      ctx.fillRect(-4, -1, 8, 2);
+      ctx.restore();
+    } else if (p.type === 'cutter') {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot || 0);
+      ctx.fillStyle = p.isEvo ? '#f43f5e' : '#94a3b8';
+      ctx.beginPath();
+      ctx.moveTo(8, 0); ctx.lineTo(-6, -4); ctx.lineTo(-6, 4); ctx.fill();
+      ctx.restore();
+    } else if (p.type === 'toilet_paper') {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot || 0);
+      ctx.fillStyle = p.isEvo ? '#facc15' : '#ffffff';
+      ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#d97706'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.restore();
+    } else if (p.type === 'box_mortar') {
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
+      ctx.beginPath(); ctx.arc(p.targetX, p.targetY, 110, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.stroke();
+    } else if (p.type === 'faktura') {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.angle || 0);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(-10, -14, 20, 28);
+      ctx.strokeStyle = '#dc2626';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-10, -14, 20, 28);
+      ctx.fillStyle = '#dc2626';
+      ctx.font = 'bold 8px Arial';
+      ctx.fillText('KOREKTA', -9, -4);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-8, 2, 16, 2);
+      ctx.fillRect(-8, 6, 12, 2);
+      ctx.restore();
+    } else if (p.type === 'staple') {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot || 0);
+      ctx.fillStyle = p.isEvo ? '#facc15' : '#38bdf8';
+      ctx.fillRect(-6, -2, 12, 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-4, -1, 8, 2);
+      ctx.restore();
+    } else if (p.type === 'hydrant_beam') {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(Math.atan2(p.vy, p.vx));
+      ctx.fillStyle = p.isEvo ? 'rgba(56, 189, 248, 0.9)' : 'rgba(96, 165, 250, 0.8)';
+      ctx.fillRect(-14, -7, 28, 14);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-10, -3, 20, 6);
+      ctx.restore();
+    } else if (p.type === 'shockwave') {
+      ctx.strokeStyle = p.color || '#f59e0b';
+      ctx.lineWidth = Math.max(1, 4 * (1 - p.radius / (p.maxRadius || 150)));
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  // 17. Draw Particles (Debris, Sparks, Smoke)
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < MAX_PARTICLES; i++) {
+    const p = particlePool[i];
+    if (p.active) {
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * (p.life / p.maxLife), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+
+  // 18. Floating Damage Texts (Clamped strictly within viewport & fontScaled for high DPI crispness)
+  ctx.save();
+  for (let i = 0; i < MAX_FLOATING_TEXTS; i++) {
+    const ft = floatingTexts[i];
+    if (ft.active) {
+const lifePct = ft.life / ft.maxLife;
+      const alpha = Math.min(1.0, ft.life * 2.5); // Fade out later
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      
+      let baseDmgSize = ft.isCrit ? 18 : 13;
+      if (ft.isCrit) {
+         // Massive popup scale on critical hits
+         if (lifePct > 0.8) {
+             baseDmgSize += (lifePct - 0.8) * 45; // Pop!
+         }
+      }
+      
+      const dmgFontSize = Math.round(baseDmgSize * fontScale);
+      ctx.font = `900 ${dmgFontSize}px "Arial Black", Impact, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const clampX = Math.max(camera.x + 25 * fontScale, Math.min(camera.x + viewW - 30 * fontScale, ft.x));
+      const clampY = Math.max(camera.y + 40 * fontScale, Math.min(camera.y + viewH - 50 * fontScale, ft.y));
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 3.5 * fontScale;
+      ctx.strokeText(ft.text, clampX, clampY);
+      ctx.fillStyle = ft.color;
+      ctx.fillText(ft.text, clampX, clampY);
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+
+  // 19. Comic Speech Bubbles (Drawn at entity world coords, max 3 active)
+  ctx.save();
+  const bubbleFontSize = Math.round(11.5 * fontScale);
+  ctx.font = `900 ${bubbleFontSize}px -apple-system, Roboto, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let i = 0; i < speechBubbles.length; i++) {
+    const b = speechBubbles[i];
+    // Skip if completely off camera
+    if (b.x < camera.x - 60 || b.x > camera.x + viewW + 60 ||
+        b.y < camera.y - 60 || b.y > camera.y + viewH + 60) {
+      continue;
+    }
+
+    const alpha = Math.min(1.0, b.life * 1.5);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    const tw = ctx.measureText(b.text).width;
+    const paddingX = 8 * fontScale;
+    const paddingY = 4 * fontScale;
+    const rectW = tw + paddingX * 2;
+    const rectH = (16 * fontScale) + paddingY * 2;
+
+    const rectX = b.x - rectW / 2;
+    const rectY = b.y - (25 * fontScale) - rectH / 2;
+
+    // Compact dark pill container
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    ctx.beginPath();
+    ctx.roundRect(rectX, rectY, rectW, rectH, 6 * fontScale);
+    ctx.fill();
+
+    ctx.strokeStyle = b.color;
+    ctx.lineWidth = 1.4 * fontScale;
+    ctx.stroke();
+
+    ctx.fillStyle = b.color;
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 4 * fontScale;
+    ctx.fillText(b.text, rectX + rectW / 2, rectY + rectH / 2);
+ctx.restore();
+  }
+  
+  // 19.5 Dynamic Lighting & Flashlight Pass
+  ctx.save();
+  ctx.globalCompositeOperation = 'multiply';
+  const flicker = Math.sin(performance.now() / 100) * 8;
+  const baseRadius = player.isForklift ? 180 : 120;
+  
+  const darkGrad = ctx.createRadialGradient(player.x, player.y, baseRadius + flicker, player.x, player.y, 1000);
+  darkGrad.addColorStop(0, 'rgba(255, 255, 255, 1)'); // Bright center
+  darkGrad.addColorStop(0.25, 'rgba(180, 180, 195, 1)'); // Soft falloff
+  darkGrad.addColorStop(1, 'rgba(15, 18, 26, 1)'); // Pitch black corners
+  
+  ctx.fillStyle = darkGrad;
+  ctx.fillRect(camera.x - 200, camera.y - 200, viewW + 400, viewH + 400);
+  ctx.restore();
+  
+  if (player.isForklift) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'overlay';
+      const headlightGrad = ctx.createRadialGradient(player.x, player.y, 50, player.x, player.y, 600);
+      headlightGrad.addColorStop(0, 'rgba(255, 250, 200, 0.4)');
+      headlightGrad.addColorStop(1, 'rgba(255, 250, 200, 0)');
+      
+      ctx.fillStyle = headlightGrad;
+      ctx.beginPath();
+      ctx.moveTo(player.x, player.y);
+      ctx.arc(player.x, player.y, 600, player.angle - 0.4, player.angle + 0.4);
+      ctx.fill();
+      ctx.restore();
+  }
+  
+  ctx.restore();
+  ctx.restore();
+
+// 20. AMOLED Screen Edge Cinematic Vignette & Low Battery Pulse
+  const vigGrad = ctx.createRadialGradient(
+    gameWidth / 2, gameHeight / 2, Math.min(gameWidth, gameHeight) * 0.35,
+    gameWidth / 2, gameHeight / 2, Math.max(gameWidth, gameHeight) * 0.85
+  );
+  vigGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  
+  let edgeColor = 'rgba(2, 6, 23, 0.75)'; // Darker edges for warehouse feel
+  
+  // Low battery red pulsing
+  if (player.battery < player.maxBattery * 0.25) {
+     const pulse = (Math.sin(performance.now() / 150) + 1) / 2; // Fast heartbeat pulse
+     edgeColor = `rgba(${100 + pulse * 100}, 0, 0, ${0.4 + pulse * 0.4})`;
+  } else if (selectedArenaKey === 'freezer') {
+     edgeColor = 'rgba(2, 20, 40, 0.8)'; // Cold blue edges
+  }
+  
+vigGrad.addColorStop(1, edgeColor);
+  ctx.fillStyle = vigGrad;
+  ctx.fillRect(0, 0, gameWidth, gameHeight);
+
+  // 21. Tactical Military Radar with Real-time 360° Sweep
+  const mapSize = 125;
+  const padding = 14;
+  const mapX = gameWidth - mapSize - padding;
+  const mapY = 95;
+  const radarCenterX = mapX + mapSize / 2;
+  const radarCenterY = mapY + mapSize / 2;
+  
+  ctx.save();
+  ctx.globalAlpha = 0.92;
+  
+  // Radar Background & Grid
+  ctx.fillStyle = 'rgba(8, 15, 30, 0.88)';
+  ctx.strokeStyle = '#0ea5e9';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(mapX, mapY, mapSize, mapSize, 8);
+  ctx.fill();
+  ctx.stroke();
+  
+  // Clip for drawing inside map
+  ctx.clip();
+  
+  const scaleX = mapSize / ARENA_WIDTH;
+  const scaleY = mapSize / ARENA_HEIGHT;
+
+  // Tactical Range Rings & Grid lines
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.22)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(radarCenterX, radarCenterY, mapSize * 0.22, 0, Math.PI * 2);
+  ctx.arc(radarCenterX, radarCenterY, mapSize * 0.42, 0, Math.PI * 2);
+  ctx.moveTo(mapX, radarCenterY); ctx.lineTo(mapX + mapSize, radarCenterY);
+  ctx.moveTo(radarCenterX, mapY); ctx.lineTo(radarCenterX, mapY + mapSize);
+  ctx.stroke();
+
+  // Rotating Phosphor Radar Sweep Beam
+  const sweepAngle = (gameTime * 2.5) % (Math.PI * 2);
+  const sweepGrad = ctx.createRadialGradient(radarCenterX, radarCenterY, 2, radarCenterX, radarCenterY, mapSize * 0.65);
+  sweepGrad.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
+  sweepGrad.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+  ctx.fillStyle = sweepGrad;
+  ctx.beginPath();
+  ctx.moveTo(radarCenterX, radarCenterY);
+  ctx.arc(radarCenterX, radarCenterY, mapSize * 0.65, sweepAngle - 0.45, sweepAngle);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(radarCenterX, radarCenterY);
+  ctx.lineTo(radarCenterX + Math.cos(sweepAngle) * mapSize * 0.65, radarCenterY + Math.sin(sweepAngle) * mapSize * 0.65);
+  ctx.stroke();
+  
+  // Draw Obstacles (Grey)
+  ctx.fillStyle = 'rgba(148, 163, 184, 0.4)';
+  for (let i = 0; i < obstacles.length; i++) {
+     const o = obstacles[i];
+     ctx.fillRect(mapX + o.x * scaleX, mapY + o.y * scaleY, Math.max(1, o.w * scaleX), Math.max(1, o.h * scaleY));
+  }
+  
+  // Draw drops/xp (Small yellow dots)
+  ctx.fillStyle = '#facc15';
+  for (let i = 0; i < dropItems.length; i++) {
+     const d = dropItems[i];
+     if (d.type !== 'lucky_chest') {
+         ctx.fillRect(mapX + d.x * scaleX, mapY + d.y * scaleY, 1.5, 1.5);
+     } else {
+         ctx.fillStyle = '#38bdf8';
+         ctx.fillRect(mapX + d.x * scaleX - 1.5, mapY + d.y * scaleY - 1.5, 3, 3);
+         ctx.fillStyle = '#facc15';
+     }
+  }
+
+  // Draw Enemies (Red)
+  ctx.fillStyle = '#ef4444';
+  for (let i = 0; i < enemies.length; i++) {
+     const e = enemies[i];
+     const es = e.isBoss ? 4 : 2.5;
+     if (e.isBoss) ctx.fillStyle = '#a855f7';
+     ctx.fillRect(mapX + e.x * scaleX - es/2, mapY + e.y * scaleY - es/2, es, es);
+     if (e.isBoss) ctx.fillStyle = '#ef4444';
+  }
+  
+  // Draw Player (Green/Cyan)
+  ctx.fillStyle = '#10b981';
+  ctx.beginPath();
+  ctx.arc(mapX + player.x * scaleX, mapY + player.y * scaleY, 3, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Draw Camera Viewport (White outline)
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+  ctx.lineWidth = 1;
+  const viewW_scaled = (gameWidth / camera.zoom) * scaleX;
+  const viewH_scaled = (gameHeight / camera.zoom) * scaleY;
+  ctx.strokeRect(mapX + camera.x * scaleX, mapY + camera.y * scaleY, viewW_scaled, viewH_scaled);
+  
+  ctx.restore();
 }
 
 
@@ -9563,6 +8058,3 @@ if (typeof sounds !== 'undefined') {
   window.sounds = sounds;
 }
 console.log("GAME ENGINE LOADED COMPLETELY");
-</script>
-</body>
-</html>

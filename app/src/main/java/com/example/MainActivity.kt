@@ -160,6 +160,7 @@ fun GameWebView(
           ViewGroup.LayoutParams.MATCH_PARENT,
           ViewGroup.LayoutParams.MATCH_PARENT
         )
+        setLayerType(View.LAYER_TYPE_HARDWARE, null)
         setBackgroundColor(android.graphics.Color.parseColor("#030712"))
         isVerticalScrollBarEnabled = false
         isHorizontalScrollBarEnabled = false
@@ -176,6 +177,10 @@ fun GameWebView(
           setSupportZoom(false)
           builtInZoomControls = false
           displayZoomControls = false
+          mediaPlaybackRequiresUserGesture = false
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+          }
         }
 
         if (repository != null) {

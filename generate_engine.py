@@ -1,4 +1,6 @@
-/**
+import sys
+
+engine_code = r'''/**
  * DTA Graniczna 8f - Next-Gen 3D WebGL Engine (Three.js r128)
  * Optimized for High-End Android (Snapdragon 8s Gen 3 / Adreno 735 - Poco F6)
  * Full 3D PBR Lighting, Dynamic Soft Shadows, Glossy Epoxy Floor, Articulated Characters & Crimsonland Gore VFX
@@ -14,11 +16,6 @@
 
   const Engine3D = {
     active: false,
-    cameraZoom: 380,
-    vfxGroup: null,
-    barrelsGroup: null,
-    barrelMeshes: new Map(),
-    vfxMeshes: new Map(),
     scene: null,
     camera: null,
     renderer: null,
@@ -151,7 +148,7 @@
         // 3. 3D Scene with Industrial Atmospheric Fog
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x060c18);
-        this.scene.fog = new THREE.FogExp2(0x020617, 0.0032);
+        this.scene.fog = new THREE.FogExp2(0x060c18, 0.00045);
 
         // 4. Tactical High-Angle Isometric Perspective Camera (52 deg pitch)
         this.camera = new THREE.PerspectiveCamera(46, width / height, 10, 8000);
@@ -178,17 +175,14 @@
         this.initParticleSystem();
 
         // 11. Groups for dynamic entities
-                this.racksGroup = new THREE.Group();
+        this.racksGroup = new THREE.Group();
         this.propsGroup = new THREE.Group();
-        this.barrelsGroup = new THREE.Group();
-        this.vfxGroup = new THREE.Group();
         this.enemiesGroup = new THREE.Group();
         this.pickupsGroup = new THREE.Group();
         this.projectilesGroup = new THREE.Group();
+
         this.scene.add(this.racksGroup);
         this.scene.add(this.propsGroup);
-        this.scene.add(this.barrelsGroup);
-        this.scene.add(this.vfxGroup);
         this.scene.add(this.enemiesGroup);
         this.scene.add(this.pickupsGroup);
         this.scene.add(this.projectilesGroup);
@@ -202,58 +196,6 @@
         console.error("❌ 3D Engine Init Failed:", err);
         this.active = false;
         return false;
-      }
-    },
-
-    
-    setCameraZoom(zoomVal) {
-      this.cameraZoom = Math.max(250, Math.min(520, parseInt(zoomVal, 10) || 380));
-    },
-
-    getScreenCoords(worldX, worldY, worldZ = 12) {
-      if (!this.camera) return { x: -999, y: -999, visible: false };
-      const vec = new THREE.Vector3(worldX, -worldY, worldZ);
-      vec.project(this.camera);
-      const w = window.innerWidth || 360;
-      const h = window.innerHeight || 640;
-      const x = (vec.x * 0.5 + 0.5) * w;
-      const y = (-(vec.y * 0.5) + 0.5) * h;
-      const visible = vec.z < 1.0 && x >= -100 && x <= w + 100 && y >= -100 && y <= h + 100;
-      return { x, y, visible };
-    },
-
-    syncBarrels(adrBarrels) {
-      if (!this.barrelsGroup || !adrBarrels) return;
-      const activeIds = new Set();
-      adrBarrels.forEach((b, idx) => {
-        if (!b.active) return;
-        const id = b.id || ("barrel_" + idx);
-        activeIds.add(id);
-        let mesh = this.barrelMeshes.get(id);
-        if (!mesh) {
-          const geo = new THREE.CylinderGeometry(11, 11, 25, 12);
-          let col = 0xef4444;
-          if (b.type === "acid") col = 0x84cc16;
-          else if (b.type === "oil") col = 0xf59e0b;
-          const mat = new THREE.MeshStandardMaterial({
-            color: col,
-            roughness: 0.35,
-            metalness: 0.65
-          });
-          mesh = new THREE.Mesh(geo, mat);
-          mesh.castShadow = true;
-          mesh.receiveShadow = true;
-          mesh.rotation.x = Math.PI / 2;
-          this.barrelsGroup.add(mesh);
-          this.barrelMeshes.set(id, mesh);
-        }
-        mesh.position.set(b.x, -b.y, 12.5);
-      });
-      for (const [id, mesh] of this.barrelMeshes.entries()) {
-        if (!activeIds.has(id)) {
-          this.barrelsGroup.remove(mesh);
-          this.barrelMeshes.delete(id);
-        }
       }
     },
 
@@ -926,11 +868,6 @@
         this.sparkPool.push({
           mesh: mesh,
           active: false,
-    cameraZoom: 380,
-    vfxGroup: null,
-    barrelsGroup: null,
-    barrelMeshes: new Map(),
-    vfxMeshes: new Map(),
           x: 0, y: 0, z: 0,
           vx: 0, vy: 0, vz: 0,
           life: 0, maxLife: 1.0,
@@ -1206,9 +1143,7 @@
       const kluska = gameEntities.kluska;
       const screenShake = gameEntities.screenShake || 0;
       const gameTime = gameEntities.gameTime || 0;
-            const obstacles = gameEntities.obstacles || [];
-      const adrBarrels = gameEntities.adrBarrels || [];
-      if (adrBarrels) this.syncBarrels(adrBarrels);
+      const obstacles = gameEntities.obstacles || [];
 
       // Auto-Sync Racks if map changes
       if (this.lastObstacleCount !== obstacles.length) {
@@ -1221,7 +1156,7 @@
       const lookAheadY = -(player.vy || 0) * 0.18;
       const targetCamX = player.x + lookAheadX;
       const targetCamY = -player.y - 490 + lookAheadY;
-      const targetCamZ = this.cameraZoom || 380;
+      const targetCamZ = 640;
 
       // 3D Screen Shake Trauma
       const shakeX = (Math.random() - 0.5) * screenShake * 2.2;
@@ -1441,3 +1376,9 @@
 
   window.Engine3D = Engine3D;
 })(window);
+'''
+
+with open("app/src/main/assets/three_engine.js", "w") as f:
+    f.write(engine_code)
+
+print("Generated full new three_engine.js successfully!")

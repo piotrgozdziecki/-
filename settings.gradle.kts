@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "DTA Survivor"
+rootProject.name = "DTA Graniczna 8f"
 
 include(":app")

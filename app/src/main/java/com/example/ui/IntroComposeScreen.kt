@@ -52,6 +52,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -931,16 +932,13 @@ fun IntroComposeScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(420.dp)
+                            .height(380.dp)
                             .border(1.5.dp, Color(0xFF38BDF8).copy(alpha = 0.8f), RoundedCornerShape(8.dp)),
                         colors = CardDefaults.cardColors(containerColor = Color(0xFF070B14)),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        WarehouseFloorCanvas(
-                            modifier = Modifier.fillMaxSize(),
-                            sector = TerminalSector.CROSSDOCK_MAIN,
-                            isInteractive = true,
-                            showTelemetryOverlay = true
+                        OpenGL25DTerminalPreview(
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
 
@@ -1117,4 +1115,100 @@ private fun DrawScope.drawTacticalRadarBackground(radarScanLine: Float) {
     // Top-Right
     drawLine(cornerColor, Offset(width - 10f, 10f), Offset(width - 10f - cornerLen, 10f), strokeWidth = 2f)
     drawLine(cornerColor, Offset(width - 10f, 10f), Offset(width - 10f, 10f + cornerLen), strokeWidth = 2f)
+}
+
+@Composable
+fun OpenGL25DTerminalPreview(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .background(Color(0xFF030712))
+            .padding(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "HYBRYDOWY SILNIK 2.5D WEBGL / OPENGL ES",
+                        color = Color(0xFF38BDF8),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                    Text(
+                        text = "Akceleracja sprzętowa Adreno GPU • Oświetlenie PBR • Soft Shadows",
+                        color = Color(0xFF94A3B8),
+                        fontSize = 9.sp
+                    )
+                }
+                Surface(
+                    color = Color(0xFF10B981).copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(4.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF10B981))
+                ) {
+                    Text(
+                        text = "120 FPS READY",
+                        color = Color(0xFF34D399),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(vertical = 8.dp)
+                    .background(Color(0xFF090D16), RoundedCornerShape(8.dp))
+                    .border(1.dp, Color(0xFF1E293B), RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "🎮 2.5D HIGH-PERFORMANCE ENGINE ACTIVE",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "PBR Epoxy Floor • Industrial Halogen Spotlights • High-Bay Racks • 450 Horde Mob Pool",
+                        color = Color(0xFF38BDF8),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Lokalizacja: DTA Graniczna 8f - Sektor A-E",
+                    color = Color(0xFF64748B),
+                    fontSize = 9.sp
+                )
+                Text(
+                    text = "Baza Danych: Room DB SQLite",
+                    color = Color(0xFF64748B),
+                    fontSize = 9.sp
+                )
+            }
+        }
+    }
 }
