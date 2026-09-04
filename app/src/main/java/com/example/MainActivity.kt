@@ -177,9 +177,7 @@ fun GameWebView(
           builtInZoomControls = false
           displayZoomControls = false
         }
-        
-        // Akceleracja sprzętowa dla płynnego renderowania Canvas 60/120fps na ekranach OLED (Snapdragon/MediaTek)
- 
+
         if (repository != null) {
           val bridge = AndroidGameBridge(
             context = context,

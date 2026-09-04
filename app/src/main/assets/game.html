@@ -7,6 +7,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>DTA Graniczna 8f: Nocna Zmiana</title>
+  <script src="three.min.js"></script>
+  <script src="three_engine.js"></script>
   <script>
     if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
       CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, radii) {
@@ -68,10 +70,28 @@
       display: block;
       width: 100%;
       height: 100%;
-      background: #030712;
+      background: transparent;
       image-rendering: pixelated;
       image-rendering: -moz-crisp-edges;
       image-rendering: crisp-edges;
+    }
+    #threeCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+    #gameCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      pointer-events: none;
     }
 
     /* HUD */
@@ -1333,6 +1353,7 @@
 <body>
 <div id="game-container">
   <div id="announcement" style="position: absolute; top: max(env(safe-area-inset-top, 12px), 36px); left: 50%; transform: translate(-50%, -10px) scale(0.95); opacity: 0; pointer-events: none; text-align: center; font-size: 13px; font-weight: 900; color: #38bdf8; background: rgba(15, 23, 42, 0.94); border: 1.5px solid #38bdf8; border-radius: 20px; padding: 6px 16px; box-shadow: 0 8px 25px rgba(0,0,0,0.7), 0 0 15px rgba(56, 189, 248, 0.25); transition: all 0.3s ease; z-index: 9999; white-space: nowrap; letter-spacing: 0.5px;"></div>
+    <canvas id="threeCanvas"></canvas>
     <canvas id="gameCanvas"></canvas>
   
 
@@ -2009,7 +2030,7 @@ function toggleMuteSound() {
 
 // Canvas & Engine Constants
 const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d', { alpha: false });
+const ctx = canvas.getContext('2d', { alpha: true });
 let gameWidth = window.innerWidth;
 let gameHeight = window.innerHeight;
 let dpr = 1;
@@ -2522,7 +2543,7 @@ let packageComboTimer = 0;
 let maxPackageCombo = 0;
 let playerLevel = 1;
 let currentXP = 0;
-let neededXP = 160;
+let neededXP = 260;
 let levelUpPendingCount = 0;
 let levelUpProcessing = false;
 let lowBatteryTimer = 0;
@@ -2537,7 +2558,7 @@ function toggleZoom() {
   const el = document.getElementById('badge-zoom-label');
   if (el) el.innerText = camera.zoom.toFixed(2) + 'x';
 }
-let screenShake = 0;
+let screenShake = 0; // Disabled per user request
 
 // Crimsonland Blood & Epoxy Stains
 const bloodStains = [];
@@ -2965,9 +2986,10 @@ const player = {
   isDashing: false,
   dashTimer: 0,
   isForklift: false,
+  hasForklift: false,
   wantsForklift: false,
-  stamina: 100,
-  staminaLock: false,
+  stamina: 0,
+  staminaLock: true,
   maxStamina: 100,
   regenRate: 0
 };
@@ -3089,6 +3111,14 @@ function spawnParticle(x, y, vx, vy, life, size, color) {
   }
 }
 function createSparks(x, y, count, color = '#f59e0b') {
+  if (window.Engine3D && window.Engine3D.active && window.Engine3D.spawnSparks) {
+    let colHex = 0xf59e0b;
+    if (color === '#ef4444') colHex = 0xef4444;
+    else if (color === '#38bdf8') colHex = 0x38bdf8;
+    else if (color === '#4ade80') colHex = 0x4ade80;
+    else if (color === '#ec4899') colHex = 0xec4899;
+    window.Engine3D.spawnSparks(x, y, 14, Math.min(count * 2, 24), colHex);
+  }
   for (let i = 0; i < count; i++) {
     const a = Math.random() * Math.PI * 2;
     const s = Math.random() * 5 + 2;
@@ -4014,62 +4044,50 @@ if (btnDetention) {
 // --- POLISH INTRO CUTSCENE STORY ENGINE ---
 const INTRO_ART_SCENES = [
   {
-    badge: '📍 BRAMA 4B | 03:00',
-    stamp: '🛑 KOSZMAR NA JAWIE',
-    satire: '„Szefie, awizo mi się zmyło w praniu...”',
-    alertTag: '⚠️ KRYZYS: 40 TIRÓW, JEDEN WÓZEK',
-    alertType: 'warning',
-    speaker: '🎙️ KIEROWNIK',
-    color: '#facc15',
-    text: 'Słuchaj uważnie! Prezes pojechał na Malediwy i obciął prąd na hali. Masz tu zostać do 7:00. Przed bramą stoi 40 ukraińskich tirów, a my mamy tylko jeden naładowany wózek BT!',
-    sound: 'error'
+    badge: "📍 BRAMA 4B / DYSPOZYCJA | 03:15",
+    stamp: "🛑 PROTOKÓŁ BLACKOUT",
+    satire: "„Jak nie ma prądu, to ładuj widły kablem od czajnika!”",
+    alertTag: "⚠️ ALARM: 60 TIRÓW, ROZŁADOWANY AKUMULATOR",
+    alertType: "danger",
+    speaker: "🎙️ KIEROWNIK JANUSZ (Z POKŁADU MALEDIWY)",
+    color: "#facc15",
+    text: "Piotr, melduj się! System WMS padł na pysk, a zarząd wyłączył transformator oszczędzając na premie. Pod bramą 4B stoi konwój 60 spóźnionych tirów z paczkami. Twoje jedyne narzędzie to wózek widłowy BT z ostatnimi procentami baterii. Jak nie ogarniesz rampy do 07:00, wszyscy lecimy na bezrobocie!",
+    sound: "error"
   },
   {
-    badge: '📍 STREFA ZWROTÓW | 03:15',
-    stamp: '🔥 PROTOKÓŁ ZNISZCZENIA',
-    satire: '„Ochrona słuchu to dla słabych.”',
-    alertTag: '🚨 STATUS: INWAZJA AUDYTORÓW',
-    alertType: 'danger',
-    speaker: '🎙️ ZASTĘPCA',
-    color: '#ef4444',
-    text: 'Urząd Skarbowy i Państwowa Inspekcja Pracy przeprowadzają równoległy nalot z orbity! Celnicy sprawdzają każdą paczkę, a awaria chłodni zalała magazyn toksyczną kawą z automatu!',
-    sound: 'beep'
+    badge: "📍 SEKTOR ZWROTÓW I REKLAMACJI | 03:22",
+    stamp: "☣️ TOKSYCZNA KAWOSZKA",
+    satire: "„Data ważności to tylko sugestia korporacji.”",
+    alertTag: "🚨 KRYZYS BIOLOGICZNY BHP",
+    alertType: "danger",
+    speaker: "🎙️ ZASTĘPCA MARIUSZ",
+    color: "#ef4444",
+    text: "Mamy skażenie! Pękły palety z przeterminowaną przedtreningówką i tanią kawą z automatu. Magazynierzy z agencji pracy zmutowali w hordę Zombie-Pickersów, a kurierzy rzucają uszkodzonymi paczkami jak granatami! Utrzymuj dystans i taranuj ich widłami!",
+    sound: "beep"
   },
   {
-    badge: '📍 REGAŁY WYSOKIEGO SKŁADOWANIA',
-    stamp: '⚠️ ŚMIERĆ Z GÓRY',
-    satire: '„Dziwne, na moim terminalu działa.”',
-    alertTag: '🛑 SYSTEM WMS PŁONIE',
-    alertType: 'danger',
-    speaker: '🎙️ IT SUPPORT',
-    color: '#38bdf8',
-    text: 'Serwery leżą! Skanery przestały działać, więc musisz improwizować. Używaj owijarki ze streczem i ręcznego paleciaka żeby przetrwać. Magia magazynu.',
-    sound: 'error'
+    badge: "📍 ALEJA REGAŁÓW WYSOKIEGO SKŁADOWANIA | 03:40",
+    stamp: "⚡ KLAUZULA WYJĄTKOWA",
+    satire: "„U nas BHP to skrót od: Bardzo Hojny Pogrzeb.”",
+    alertTag: "🛑 SYSTEM AUDYTU KAS & PIP",
+    alertType: "warning",
+    speaker: "🎙️ OCHRONIARZ ZDZISŁAW (PRZEZ KRÓTKOFALÓWKĘ)",
+    color: "#38bdf8",
+    text: "Uwaga na hali! Z orbity ląduje desant mobilny Państwowej Inspekcji Pracy i Urzędu Celno-Skarbowego. Inspektorzy mierzą suwmiarką każdą paletę. Jeśli wjedziesz w ich czerwoną strefę rewizji, nałożą mandat w ułamku sekundy. Pies Kluska wywęszy ukryte hot-dogi na podłodze – trzymaj się go blisko!",
+    sound: "bossAlert"
   },
   {
-    badge: '📍 STREFA VIP',
-    stamp: '☠️ INSPEKTOR KAS NADCIĄGA',
-    satire: '„Panie, to nie moje cło...”',
-    alertTag: '🚨 KONTROLA SKARBOWA',
-    alertType: 'warning',
-    speaker: '🎙️ OCHRONA',
-    color: '#facc15',
-    text: 'Uwaga! Jeśli zobaczysz czerwoną strefę Rewizji Szczegółowej, masz 5 sekund by stamtąd uciec! Urząd Skarbowy nie bierze jeńców!',
-    sound: 'bossAlert'
-  },
-  {
-    badge: '📍 WÓZKI WIDŁOWE',
-    stamp: '🚀 TRYB VAMPIRE SURVIVOR',
-    satire: '„Mam na to uprawnienia... chyba.”',
-    alertTag: '🔥 OVERTIME APOCALYPSE',
-    alertType: 'danger',
-    speaker: '🎙️ KIEROWNIK',
-    color: '#ef4444',
-    text: 'Zasady są proste: Rób uniki, uciekaj przed chmarą kartonów, a gdy pasek baterii się naładuje - odpalaj wózek BT i rozjeżdżaj ich wszystkich! JAZDA!',
-    sound: 'achieve'
+    badge: "📍 GŁÓWNA NAWA MAGAZYNOWA | 03:55",
+    stamp: "🚀 ZASADY PRZETRWANIA VAMPIRE DTA",
+    satire: "„Kto nie driftuje widlakiem, ten nie pije kawy!”",
+    alertTag: "🔥 HARDCORE SURVIVAL TACTICS",
+    alertType: "danger",
+    speaker: "🎙️ DYSPOZYTOR CENTRALNY",
+    color: "#22c55e",
+    text: "Pamiętaj zasadę Crimsonlandu: nie stój w miejscu! Wykorzystuj siłę odśrodkową w zakrętach, owijaj mutantów taśmą strecz i zbieraj kody kreskowe XP. Skrzynie z rzadkimi perkami wypadają tylko z najgroźniejszych bossów i elit. Wskakuj za kółko Toyoty BT – zaczynamy najdłuższą nocną zmianę w historii!",
+    sound: "achieve"
   }
 ];
-
 let currentIntroIndex = 0;
 
 function showIntroDialog() {
@@ -5202,7 +5220,8 @@ function checkLevelUp() {
   while (currentXP >= neededXP) {
     currentXP -= neededXP;
     playerLevel++;
-    neededXP = Math.floor(neededXP * 1.52 + 50);
+    // Balanced hardcore progression: higher growth rate so perks feel earned and rare
+    neededXP = Math.floor(neededXP * 1.68 + 80);
     levelUpPendingCount++;
     leveledUp = true;
   }
@@ -6832,12 +6851,15 @@ function killEnemy(e, isOverkill = false) {
   // Random item drops (Hotdog, Kinder Bueno, Awizo, Kawa, Skrzynia, Monety DTA)
   const rand = Math.random();
 if (e.isBoss) {
-    dropItems.push({ x: e.x, y: e.y, type: 'lucky_chest', val: 3, life: 60 });
+    // Boss guarantees one treasure chest
+    dropItems.push({ x: e.x, y: e.y, type: 'lucky_chest', val: 1, life: 60 });
     dropItems.push({ x: e.x + 25, y: e.y + 10, type: 'dta_coin', val: 100, life: 60 });
-    window.timeScale = 0.15; // Massive cinematic slow-mo!
+    window.timeScale = 0.18;
     screenShake = 20;
-  } else if (rand < 0.035 || (e.info.hp >= 120 && Math.random() < 0.25)) {
+  } else if (rand < 0.005 || (e.info.hp >= 300 && Math.random() < 0.025)) {
+    // Ultra rare lucky chest drop for regular/elite enemies (0.5% chance)
     dropItems.push({ x: e.x, y: e.y, type: 'lucky_chest', val: 1, life: 45 });
+    addSpeechBubble(e.x, e.y - 30, '💎 RZADKA SKRZYNIA Z PERKIEM!', '#38bdf8');
   } else if (rand < 0.10) {
     dropItems.push({ x: e.x, y: e.y, type: 'dta_coin', val: 20 + Math.floor(Math.random() * 20), life: 30 });
   } else if (rand < 0.12) {
@@ -7145,7 +7167,7 @@ function update(dt) {
 
   // Handle Golden Velvet item pick up in dropItems collection loop
   // Stamina-based Forklift mechanic
-  let canForklift = (player.wantsForklift && player.stamina > 0 && !player.staminaLock);
+  let canForklift = (player.hasForklift && player.wantsForklift && player.stamina > 0 && !player.staminaLock);
   if (canForklift && !player.isForklift && player.stamina < 20) {
      player.staminaLock = true;
      canForklift = false;
@@ -7388,6 +7410,7 @@ player.x += player.vx * dt;
   if (player.invulnTimer > 0) player.invulnTimer -= dt;
   if (player.goldenForkliftTimer > 0) {
       player.goldenForkliftTimer -= dt;
+      player.isForklift = true;
       player.stamina = player.maxStamina;
       player.speed = 320;
       createSparks(player.x, player.y, 2, '#facc15');
@@ -7396,9 +7419,13 @@ player.x += player.vx * dt;
          if (Math.hypot(en.x - player.x, en.y - player.y) < player.radius + en.info.radius + 15) {
              damageEnemy(en, 300);
              createSparks(en.x, en.y, 15, '#facc15');
-             screenShake = Math.max(screenShake, 4);
          }
       });
+      if (player.goldenForkliftTimer <= 0 && !player.hasForklift) {
+         player.isForklift = false;
+         player.speed = 175;
+         addSpeechBubble(player.x, player.y - 30, '🚜 KONIEC BONUSU WÓZKA!', '#94a3b8');
+      }
   }
   if (player.discoTimer > 0) {
       player.discoTimer -= dt;
@@ -8558,7 +8585,224 @@ function drawSingleEnemy(ctx, e, viewW, viewH) {
   ctx.restore();
 }
 
+
+function render2DOverlays(dt = 0.016) {
+  if (!ctx) return;
+  const zoom = Math.max(0.01, camera.zoom || 0.5);
+  const viewW = gameWidth / zoom;
+  const viewH = gameHeight / zoom;
+  const fontScale = 1.0 / zoom;
+
+  ctx.save();
+  ctx.scale(zoom, zoom);
+  const shakeX = 0;
+  const shakeY = 0;
+  const camX = isNaN(camera.x) ? 0 : camera.x;
+  const camY = isNaN(camera.y) ? 0 : camera.y;
+  ctx.translate(-camX + shakeX, -camY + shakeY);
+
+  // Floating Damage Texts
+  ctx.save();
+  for (let i = 0; i < MAX_FLOATING_TEXTS; i++) {
+    const ft = floatingTexts[i];
+    if (ft && ft.active) {
+      const lifePct = ft.life / ft.maxLife;
+      const alpha = Math.min(1.0, ft.life * 2.5);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      let baseDmgSize = ft.isCrit ? 18 : 13;
+      if (ft.isCrit && lifePct > 0.8) {
+        baseDmgSize += (lifePct - 0.8) * 45;
+      }
+      const dmgFontSize = Math.round(baseDmgSize * fontScale);
+      ctx.font = `900 ${dmgFontSize}px "Arial Black", Impact, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const clampX = Math.max(camera.x + 25 * fontScale, Math.min(camera.x + viewW - 30 * fontScale, ft.x));
+      const clampY = Math.max(camera.y + 40 * fontScale, Math.min(camera.y + viewH - 50 * fontScale, ft.y));
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 3.5 * fontScale;
+      ctx.strokeText(ft.text, clampX, clampY);
+      ctx.fillStyle = ft.color;
+      ctx.fillText(ft.text, clampX, clampY);
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+
+  // Comic Speech Bubbles
+  ctx.save();
+  const bubbleFontSize = Math.round(11.5 * fontScale);
+  ctx.font = `900 ${bubbleFontSize}px -apple-system, Roboto, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  for (let i = 0; i < speechBubbles.length; i++) {
+    const b = speechBubbles[i];
+    if (b.x < camera.x - 60 || b.x > camera.x + viewW + 60 ||
+        b.y < camera.y - 60 || b.y > camera.y + viewH + 60) continue;
+    const alpha = Math.min(1.0, b.life * 1.5);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    const tw = ctx.measureText(b.text).width;
+    const paddingX = 8 * fontScale;
+    const paddingY = 4 * fontScale;
+    const rectW = tw + paddingX * 2;
+    const rectH = (16 * fontScale) + paddingY * 2;
+    const rectX = b.x - rectW / 2;
+    const rectY = b.y - (25 * fontScale) - rectH / 2;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
+    ctx.beginPath();
+    ctx.roundRect(rectX, rectY, rectW, rectH, 6 * fontScale);
+    ctx.fill();
+    ctx.strokeStyle = b.color;
+    ctx.lineWidth = 1.4 * fontScale;
+    ctx.stroke();
+    ctx.fillStyle = b.color;
+    ctx.shadowColor = "rgba(0,0,0,0.8)";
+    ctx.shadowBlur = 4 * fontScale;
+    ctx.fillText(b.text, rectX + rectW / 2, rectY + rectH / 2);
+    ctx.restore();
+  }
+  ctx.restore();
+  ctx.restore(); // end camera transform
+
+  // AMOLED Screen Edge Cinematic Vignette & Low Battery Pulse
+  const vigGrad = ctx.createRadialGradient(
+    gameWidth / 2, gameHeight / 2, Math.min(gameWidth, gameHeight) * 0.35,
+    gameWidth / 2, gameHeight / 2, Math.max(gameWidth, gameHeight) * 0.85
+  );
+  vigGrad.addColorStop(0, "rgba(0, 0, 0, 0)");
+  let edgeColor = "rgba(2, 6, 23, 0.75)";
+  if (player.battery < player.maxBattery * 0.25) {
+    const pulse = (Math.sin(performance.now() / 150) + 1) / 2;
+    edgeColor = `rgba(${100 + pulse * 100}, 0, 0, ${0.4 + pulse * 0.4})`;
+  } else if (typeof selectedArenaKey !== "undefined" && selectedArenaKey === "freezer") {
+    edgeColor = "rgba(2, 20, 40, 0.8)";
+  }
+  vigGrad.addColorStop(1, edgeColor);
+  ctx.fillStyle = vigGrad;
+  ctx.fillRect(0, 0, gameWidth, gameHeight);
+
+  // Tactical Military Radar with Real-time 360° Sweep
+  const mapSize = 125;
+  const padding = 14;
+  const mapX = gameWidth - mapSize - padding;
+  const mapY = 95;
+  const radarCenterX = mapX + mapSize / 2;
+  const radarCenterY = mapY + mapSize / 2;
+
+  ctx.save();
+  ctx.globalAlpha = 0.92;
+  ctx.fillStyle = "rgba(8, 15, 30, 0.88)";
+  ctx.strokeStyle = "#0ea5e9";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(mapX, mapY, mapSize, mapSize, 8);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.clip();
+  const scaleX = mapSize / ARENA_WIDTH;
+  const scaleY = mapSize / ARENA_HEIGHT;
+
+  ctx.strokeStyle = "rgba(56, 189, 248, 0.22)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(radarCenterX, radarCenterY, mapSize * 0.22, 0, Math.PI * 2);
+  ctx.arc(radarCenterX, radarCenterY, mapSize * 0.42, 0, Math.PI * 2);
+  ctx.moveTo(mapX, radarCenterY); ctx.lineTo(mapX + mapSize, radarCenterY);
+  ctx.moveTo(radarCenterX, mapY); ctx.lineTo(radarCenterX, mapY + mapSize);
+  ctx.stroke();
+
+  const sweepAngle = (gameTime * 2.5) % (Math.PI * 2);
+  const sweepGrad = ctx.createRadialGradient(radarCenterX, radarCenterY, 2, radarCenterX, radarCenterY, mapSize * 0.65);
+  sweepGrad.addColorStop(0, "rgba(56, 189, 248, 0.4)");
+  sweepGrad.addColorStop(1, "rgba(56, 189, 248, 0.0)");
+  ctx.fillStyle = sweepGrad;
+  ctx.beginPath();
+  ctx.moveTo(radarCenterX, radarCenterY);
+  ctx.arc(radarCenterX, radarCenterY, mapSize * 0.65, sweepAngle - 0.45, sweepAngle);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "#38bdf8";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(radarCenterX, radarCenterY);
+  ctx.lineTo(radarCenterX + Math.cos(sweepAngle) * mapSize * 0.65, radarCenterY + Math.sin(sweepAngle) * mapSize * 0.65);
+  ctx.stroke();
+
+  // Draw Obstacles (Grey)
+  ctx.fillStyle = "rgba(148, 163, 184, 0.4)";
+  if (typeof obstacles !== "undefined") {
+    for (let i = 0; i < obstacles.length; i++) {
+      const o = obstacles[i];
+      const ow = o.w || o.width || 120;
+      const oh = o.h || o.height || 280;
+      ctx.fillRect(mapX + o.x * scaleX, mapY + o.y * scaleY, Math.max(1, ow * scaleX), Math.max(1, oh * scaleY));
+    }
+  }
+
+  // Draw drops/xp (Small yellow dots)
+  ctx.fillStyle = "#facc15";
+  if (typeof dropItems !== "undefined") {
+    for (let i = 0; i < dropItems.length; i++) {
+      const d = dropItems[i];
+      if (d.type !== "lucky_chest") {
+        ctx.fillRect(mapX + d.x * scaleX, mapY + d.y * scaleY, 1.5, 1.5);
+      } else {
+        ctx.fillStyle = "#38bdf8";
+        ctx.fillRect(mapX + d.x * scaleX - 1.5, mapY + d.y * scaleY - 1.5, 3, 3);
+        ctx.fillStyle = "#facc15";
+      }
+    }
+  }
+
+  // Draw Enemies (Red)
+  ctx.fillStyle = "#ef4444";
+  if (typeof enemies !== "undefined") {
+    for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
+      const es = e.isBoss ? 4 : 2.5;
+      if (e.isBoss) ctx.fillStyle = "#a855f7";
+      ctx.fillRect(mapX + e.x * scaleX - es/2, mapY + e.y * scaleY - es/2, es, es);
+      if (e.isBoss) ctx.fillStyle = "#ef4444";
+    }
+  }
+
+  // Draw Player (Green/Cyan)
+  ctx.fillStyle = "#10b981";
+  ctx.beginPath();
+  ctx.arc(mapX + player.x * scaleX, mapY + player.y * scaleY, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Draw Camera Viewport (White outline)
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+  ctx.lineWidth = 1;
+  const viewW_scaled = (gameWidth / camera.zoom) * scaleX;
+  const viewH_scaled = (gameHeight / camera.zoom) * scaleY;
+  ctx.strokeRect(mapX + camera.x * scaleX, mapY + camera.y * scaleY, viewW_scaled, viewH_scaled);
+
+  ctx.restore();
+}
+
 function render(dt = 0.016) {
+  if (window.Engine3D && window.Engine3D.active) {
+    window.Engine3D.update(dt, {
+      player,
+      enemies,
+      dropItems,
+      projectiles,
+      kluska,
+      screenShake,
+      gameTime
+    });
+    if (ctx && canvas) {
+      ctx.clearRect(0, 0, gameWidth, gameHeight);
+      render2DOverlays(dt);
+    }
+    return;
+  }
+
   if (!ctx || !canvas) return;
   const sec = (typeof WAREHOUSE_SECTORS !== 'undefined') ? (WAREHOUSE_SECTORS[currentSectorIndex] || WAREHOUSE_SECTORS[0]) : { floorColor: '#030712', gridColor: '#1e293b' };
   ctx.save();
@@ -8579,18 +8823,20 @@ function render(dt = 0.016) {
   const camY = isNaN(camera.y) ? 0 : camera.y;
   ctx.translate(-camX + shakeX, -camY + shakeY);
 
-  // 1. Draw High-Contrast Epoxy Warehouse Floor Grid with Sector Styling
-  ctx.strokeStyle = sec.gridColor;
-  ctx.lineWidth = 1.2;
-  const startX = Math.floor(camera.x / 120) * 120;
-  const startY = Math.floor(camera.y / 120) * 120;
-  for (let x = startX; x < camera.x + viewW + 120; x += 120) {
-    ctx.beginPath(); ctx.moveTo(x, camera.y); ctx.lineTo(x, camera.y + viewH); ctx.stroke();
-  }
-  for (let y = startY; y < camera.y + viewH + 120; y += 120) {
-    ctx.beginPath(); ctx.moveTo(camera.x, y); ctx.lineTo(camera.x + viewW, y); ctx.stroke();
-  }
+  // 1. Draw High-Contrast Epoxy WarIndustrial Polished Epoxy Warehouse Floor (No Grid)
+  const floorGloss = ctx.createLinearGradient(camera.x, camera.y, camera.x + viewW, camera.y + viewH);
+  floorGloss.addColorStop(0, "rgba(255, 255, 255, 0.02)");
+  floorGloss.addColorStop(0.5, "rgba(255, 255, 255, 0.04)");
+  floorGloss.addColorStop(1, "rgba(0, 0, 0, 0.06)");
+  ctx.fillStyle = floorGloss;
+  ctx.fillRect(camera.x, camera.y, viewW, viewH);
 
+  // Stenciled Transport Boundary Markings (clean, sparse industrial walkways instead of grid)
+  ctx.fillStyle = "rgba(234, 179, 8, 0.25)";
+  const laneY = 960;
+  if (laneY >= camera.y - 20 && laneY <= camera.y + viewH + 20) {
+    ctx.fillRect(camera.x, laneY, viewW, 6);
+  }
   // 2. Overhead Industrial Fluorescent Light Cones
   for (let i = 0; i < warehouseLights.length; i++) {
     const l = warehouseLights[i];
@@ -9393,6 +9639,10 @@ function startGame() {
 }
 
 function startGamePlay() {
+  if (typeof Engine3D !== "undefined") {
+    if (!Engine3D.active) Engine3D.init();
+    if (Engine3D.active) Engine3D.syncRacks(obstacles);
+  }
   document.getElementById('start-screen').style.display = 'none';
   document.getElementById('intro-screen').style.display = 'none';
   if (document.getElementById('levelup-screen')) document.getElementById('levelup-screen').style.display = 'none';
