@@ -1,0 +1,6 @@
+{
+  "name": "DTA Graniczna 8f",
+  "description": "Taktyczny Crimsonland horde survival na nocnej zmianie w terminalu logistycznym DTA Graniczna 8f.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

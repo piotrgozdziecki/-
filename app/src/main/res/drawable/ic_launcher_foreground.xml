@@ -1,0 +1,47 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Laser Beam -->
+    <path
+        android:fillColor="#EF4444"
+        android:pathData="M64,54L94,36L94,38L64,56Z" />
+    <path
+        android:fillColor="#EF4444"
+        android:pathData="M64,54L96,52L96,54L64,56Z" />
+    <!-- Steel Forks -->
+    <path
+        android:fillColor="#CBD5E1"
+        android:pathData="M62,60L86,60L86,64L62,64Z" />
+    <path
+        android:fillColor="#94A3B8"
+        android:pathData="M62,48L86,48L86,52L62,52Z" />
+    <!-- Mast Vertical Rail -->
+    <path
+        android:fillColor="#334155"
+        android:pathData="M56,36L62,36L62,72L56,72Z" />
+    <!-- Toyota Forklift Orange Body -->
+    <path
+        android:fillColor="#EA580C"
+        android:pathData="M24,46L56,46L56,72L24,72Z" />
+    <!-- Cabin Roof Cage -->
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M32,32L52,32L52,46L32,46Z" />
+    <path
+        android:fillColor="#EAB308"
+        android:pathData="M38,38m-5,0a5,5 0 1,0 10,0a5,5 0 1,0 -10,0" />
+    <!-- Warning Beacon -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M26,30m-4,0a4,4 0 1,0 8,0a4,4 0 1,0 -8,0" />
+    <!-- Wheels -->
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M28,72m-6,0a6,6 0 1,0 12,0a6,6 0 1,0 -12,0" />
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M48,72m-6,0a6,6 0 1,0 12,0a6,6 0 1,0 -12,0" />
+</vector>
+

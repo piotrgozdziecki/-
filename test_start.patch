@@ -1,0 +1,29 @@
+--- app/src/main/assets/game.html
++++ app/src/main/assets/game.html
+@@ -6405,10 +6405,14 @@
+ 
+ // --- STATE MANAGERS & SAVING ---
+ function startGame() {
+-  sounds.init();
+-  document.getElementById('start-screen').style.display = 'none';
+-  showIntroDialog();
++  try {
++    sounds.init();
++    document.getElementById('start-screen').style.display = 'none';
++    showIntroDialog();
++  } catch (err) {
++    alert("START ERROR: " + err.message + "\n" + err.stack);
++  }
+ }
+ 
+ function startGamePlay() {
++  try {
+   const c = CHARACTERS[selectedCharKey];
+@@ -6475,6 +6479,9 @@
+   createSparks(player.x, player.y, 40, '#f59e0b');
+   
+   gameState = STATE.PLAYING;
++  } catch (err) {
++    alert("GAME PLAY ERROR: " + err.message + "\n" + err.stack);
++  }
+ }

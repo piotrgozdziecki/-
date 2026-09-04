@@ -1,0 +1,1 @@
+sed -i 's/<button id="btn-start" class="btn-main" onclick="startGame()">ROZPOCZNIJ ZMIANĘ<\/button>/<div class="sticky-start-wrapper"><button id="btn-start" class="btn-main" onclick="startGame()">ROZPOCZNIJ ZMIANĘ<\/button><\/div>/g' app/src/main/assets/game.html

@@ -1,0 +1,1 @@
+sed -i 's/\.btn-main {/\.sticky-start-wrapper {\n      position: sticky;\n      bottom: -16px;\n      background: #171d29;\n      padding: 12px 14px;\n      margin: 10px -14px -16px -14px;\n      z-index: 100;\n      border-top: 1px solid #334155;\n      box-shadow: 0 -10px 20px rgba(23, 29, 41, 0.95);\n    }\n    .btn-main {/g' app/src/main/assets/game.html
