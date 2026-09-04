@@ -2331,28 +2331,31 @@ function resizeCanvas() {
   try {
     gameWidth = window.innerWidth || document.documentElement.clientWidth || screen.width || 360;
     gameHeight = window.innerHeight || document.documentElement.clientHeight || screen.height || 640;
+    dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio || 1));
     
-    // Poco F6 Uncapped Ultra-High Resolution (1.5K AMOLED 120Hz native DPI)
-    dpr = Math.max(1, window.devicePixelRatio || 1);
-    canvas.width = Math.round(gameWidth * dpr);
-    canvas.height = Math.round(gameHeight * dpr);        
-    // Ensure the context is updated after width/height change with high quality smoothing
-    if (ctx) {
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      
-      // Initial clear to prevent black flicker
-      ctx.fillStyle = '#030712';
-      ctx.fillRect(0, 0, gameWidth, gameHeight);
+    if (canvas) {
+      canvas.width = Math.round(gameWidth * dpr);
+      canvas.height = Math.round(gameHeight * dpr);
     }
     
-    console.log("RESIZE: " + gameWidth + "x" + gameHeight + " DPR: " + dpr + " (Canvas: " + canvas.width + "x" + canvas.height + ")");
+    if (window.Engine3D && window.Engine3D.active && window.Engine3D.onResize) {
+      window.Engine3D.onResize(gameWidth, gameHeight);
+    }
+    
+    console.log("RESIZE OK: " + gameWidth + "x" + gameHeight + " (DPR: " + dpr + ")");
   } catch (err) {
     console.error("RESIZE ERROR: ", err);
   }
 }
 window.addEventListener('resize', resizeCanvas);
+
+// Global touch listener to unlock AudioContext on first user touch/gesture
+window.addEventListener('touchstart', function unlockAudio() {
+  if (typeof sounds !== 'undefined' && sounds.init) {
+    sounds.init();
+  }
+}, { once: true });
+
 setTimeout(resizeCanvas, 100); // Delayed resize for Android WebView layout stabilization
 resizeCanvas();
 

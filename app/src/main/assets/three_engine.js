@@ -257,7 +257,7 @@
       }
     },
 
-    onResize() {
+    onResize(customW, customH) {
       if (!this.renderer || !this.camera) return;
       const w = window.innerWidth || 360;
       const h = window.innerHeight || 640;
