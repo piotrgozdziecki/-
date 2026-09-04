@@ -206,6 +206,14 @@ fun GameWebView(
             super.onReceivedError(view, request, error)
             android.util.Log.e("WebViewError", "Error loading ${request?.url}: ${error?.description} (${error?.errorCode})")
           }
+
+          override fun onRenderProcessGone(
+            view: WebView?,
+            detail: android.webkit.RenderProcessGoneDetail?
+          ): Boolean {
+            android.util.Log.w("WebViewRender", "Render process gone handled gracefully.")
+            return true
+          }
         }
         webChromeClient = object : WebChromeClient() {
           override fun onConsoleMessage(consoleMessage: android.webkit.ConsoleMessage?): Boolean {
