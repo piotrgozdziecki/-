@@ -37,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.ElectricBolt
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Person
@@ -416,7 +417,7 @@ fun IntroComposeScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // --- 5 TACTICAL NAVIGATION TABS ---
+            // --- 6 TACTICAL NAVIGATION TABS ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(3.dp)
@@ -426,7 +427,8 @@ fun IntroComposeScreen(
                     Triple(1, "ARSENAŁ", Icons.Default.Build),
                     Triple(2, "SYNERGIE", Icons.Default.AutoAwesome),
                     Triple(3, "ZAGROŻENIA", Icons.Default.Warning),
-                    Triple(4, "DYREKTYWY", Icons.Default.MenuBook)
+                    Triple(4, "DYREKTYWY", Icons.Default.MenuBook),
+                    Triple(5, "POSADZKA", Icons.Default.Layers)
                 )
 
                 tabs.forEach { (index, label, _) ->
@@ -896,6 +898,61 @@ fun IntroComposeScreen(
                             }
                         }
                     }
+                }
+            }
+
+            // ==========================================
+            // TAB CONTENT 5: PROCEDURAL WAREHOUSE FLOOR (DTA GRANICZNA 8F)
+            // ==========================================
+            if (currentMainTab == 5) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "PROCEDURALNA POSADZKA DTA GRANICZNA 8F:",
+                            color = Color(0xFF38BDF8),
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 0.8.sp
+                        )
+                        Text(
+                            text = "INTERAKTYWNY SKANER DYLATACJI",
+                            color = Color(0xFFF59E0B),
+                            fontSize = 7.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(420.dp)
+                            .border(1.5.dp, Color(0xFF38BDF8).copy(alpha = 0.8f), RoundedCornerShape(8.dp)),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF070B14)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        WarehouseFloorCanvas(
+                            modifier = Modifier.fillMaxSize(),
+                            sector = TerminalSector.CROSSDOCK_MAIN,
+                            isInteractive = true,
+                            showTelemetryOverlay = true
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "💡 WSKAZÓWKA: Przeciągnij palcem po posadzce, aby przesuwać mapę. Użyj gestu dwóch palców, aby przybliżać/oddalać. Dotknij pola odstawczego lub płyty dylatacyjnej, aby odczytać telemetrię nośności i statusu EPAL.",
+                        color = Color(0xFF94A3B8),
+                        fontSize = 8.sp,
+                        lineHeight = 12.sp,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
                 }
             }
 
