@@ -161,7 +161,6 @@ fun GameWebView(
           ViewGroup.LayoutParams.MATCH_PARENT
         )
         setBackgroundColor(android.graphics.Color.parseColor("#030712"))
-        setLayerType(View.LAYER_TYPE_HARDWARE, null)
         isVerticalScrollBarEnabled = false
         isHorizontalScrollBarEnabled = false
         overScrollMode = View.OVER_SCROLL_NEVER
