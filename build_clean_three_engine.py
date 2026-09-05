@@ -1,4 +1,6 @@
-/**
+import os
+
+engine_code = r'''/**
  * DTA Graniczna 8f - Next-Gen 3D WebGL Engine (Three.js r128)
  * High-End Android & Poco F6 (Snapdragon 8s Gen 3 / Adreno 735)
  * - Auto-scaling Top-Down Crimsonland Camera
@@ -1008,3 +1010,9 @@
 
   window.Engine3D = Engine3D;
 })(window);
+'''
+
+with open("app/src/main/assets/three_engine.js", "w") as f:
+    f.write(engine_code)
+
+print("three_engine.js built successfully with Auto-Scaling Camera & Realistic PBR Engine!")

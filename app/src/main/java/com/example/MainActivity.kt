@@ -155,6 +155,19 @@ fun GameWebView(
   AndroidView(
     modifier = modifier.fillMaxSize(),
     factory = { ctx ->
+      try {
+        val codeCacheDir = java.io.File(ctx.cacheDir, "WebView/Default/HTTP Cache/Code Cache/js")
+        if (!codeCacheDir.exists()) {
+          codeCacheDir.mkdirs()
+        }
+        val wasmCacheDir = java.io.File(ctx.cacheDir, "WebView/Default/HTTP Cache/Code Cache/wasm")
+        if (!wasmCacheDir.exists()) {
+          wasmCacheDir.mkdirs()
+        }
+      } catch (e: Exception) {
+        android.util.Log.w("MainActivity", "Failed creating WebView cache directories: ${e.message}")
+      }
+
       WebView(ctx).apply {
         layoutParams = ViewGroup.LayoutParams(
           ViewGroup.LayoutParams.MATCH_PARENT,
@@ -169,15 +182,22 @@ fun GameWebView(
         settings.apply {
           javaScriptEnabled = true
           domStorageEnabled = true
+          databaseEnabled = true
           allowFileAccess = true
+          allowContentAccess = true
           useWideViewPort = true
           loadWithOverviewMode = true
           textZoom = 100
-          cacheMode = WebSettings.LOAD_NO_CACHE
+          cacheMode = WebSettings.LOAD_DEFAULT
           setSupportZoom(false)
           builtInZoomControls = false
           displayZoomControls = false
           mediaPlaybackRequiresUserGesture = false
+          @Suppress("DEPRECATION")
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            allowFileAccessFromFileURLs = true
+            allowUniversalAccessFromFileURLs = true
+          }
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
           }

@@ -1495,6 +1495,21 @@
   </div>
 
   <div id="hud">
+    <div id="fps-detail-card" style="display: none; position: absolute; top: 52px; right: 12px; background: rgba(15, 23, 42, 0.94); border: 1px solid #334155; backdrop-filter: blur(8px); border-radius: 8px; padding: 10px 14px; color: #cbd5e1; font-family: monospace; font-size: 11px; z-index: 1000; pointer-events: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.6); min-width: 210px;">
+      <div style="font-weight: bold; color: #38bdf8; margin-bottom: 6px; border-bottom: 1px solid #334155; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+        <span>⚡ ENGINE DEBUGGER</span>
+        <span onclick="toggleFpsDetails()" style="cursor: pointer; color: #94a3b8; font-size: 12px; padding: 2px 4px;">✖</span>
+      </div>
+      <div style="margin-bottom: 3px;">Płynność: <span id="fps-val" style="color:#22c55e; font-weight:bold;">60 FPS</span> (<span id="ms-val">16.6ms</span>)</div>
+      <div style="margin-bottom: 3px;">Wrogowie: <span id="fps-enemies" style="color:#fef08a; font-weight:bold;">0</span></div>
+      <div style="margin-bottom: 3px;">Pociski: <span id="fps-projectiles" style="color:#7dd3fc; font-weight:bold;">0</span></div>
+      <div style="margin-bottom: 3px;">Przedmioty / ADR: <span id="fps-items" style="color:#f472b6; font-weight:bold;">0</span></div>
+      <div style="margin-bottom: 3px;">Obiekty 3D Łącznie: <span id="fps-total-ents" style="color:#e2e8f0; font-weight:bold;">0</span></div>
+      <div style="margin-top: 6px; padding-top: 4px; border-top: 1px dashed #334155; color: #94a3b8; font-size: 10px;">
+        Silnik: <span style="color:#a7f3d0;">Three.js PBR WebGL</span><br>
+        Auto-FOV: <span style="color:#fde047;">Aktywne</span>
+      </div>
+    </div>
     <div class="xp-bar-container">
       <div id="xp-fill" class="xp-bar-fill"></div>
     </div>
@@ -1513,6 +1528,7 @@
         <div class="status-panel-group" style="pointer-events: auto;">
           <div id="badge-battery" class="stat-badge badge-battery">⚡ 100%</div>
           <div id="badge-combo" class="stat-badge badge-combo">🔥 COMBO x1</div>
+          <div id="badge-fps" class="stat-badge" onclick="toggleFpsDetails()" style="border-color: #22c55e; color: #86efac; font-weight: 700; cursor: pointer;" title="Kliknij, aby otworzyć szczegóły wydajności">⚡ 60 FPS | 👥 0 ENTS</div>
           <div id="badge-zoom" class="stat-badge" onclick="toggleZoom()" style="border-color: #38bdf8; color: #7dd3fc; cursor: pointer;">🔍 <span id="badge-zoom-label">0.50x</span></div>
           <div id="badge-pause" class="stat-badge" onclick="togglePause()" style="border-color: #a855f7; color: #e9d5ff; font-weight: 900; cursor: pointer;">⏸️ PAUZA</div>
         </div>
@@ -8594,7 +8610,51 @@ player.x += player.vx * dt;
     if (speechBubbles[i].life <= 0) speechBubbles.splice(i, 1);
   }
 
-  // Update DOM HUD
+  // Update DOM HUD & FPS
+  fpsFrameCount++;
+  const elapsedFps = now - fpsLastCalc;
+  if (elapsedFps >= 350) {
+    currentFps = Math.round((fpsFrameCount * 1000) / elapsedFps);
+    currentFrameMs = (elapsedFps / fpsFrameCount).toFixed(1);
+    fpsFrameCount = 0;
+    fpsLastCalc = now;
+
+    const activeEnemies = (typeof enemies !== "undefined" && enemies) ? enemies.filter(e => !e.dead).length : 0;
+    const activeProjs = (typeof projectiles !== "undefined" && projectiles) ? projectiles.length : 0;
+    const activeItems = ((typeof dropItems !== "undefined" && dropItems) ? dropItems.length : 0) + ((typeof adrBarrels !== "undefined" && adrBarrels) ? adrBarrels.filter(b => b.active).length : 0);
+    const totalEnts = activeEnemies + activeProjs + activeItems + 1;
+
+    const fpsBadge = document.getElementById('badge-fps');
+    if (fpsBadge) {
+      fpsBadge.innerHTML = `⚡ ${currentFps} FPS | 👥 ${totalEnts} ENTS`;
+      if (currentFps >= 50) {
+        fpsBadge.style.borderColor = '#22c55e';
+        fpsBadge.style.color = '#86efac';
+      } else if (currentFps >= 30) {
+        fpsBadge.style.borderColor = '#f59e0b';
+        fpsBadge.style.color = '#fde047';
+      } else {
+        fpsBadge.style.borderColor = '#ef4444';
+        fpsBadge.style.color = '#fca5a5';
+      }
+    }
+
+    const fpsVal = document.getElementById('fps-val');
+    if (fpsVal) {
+      fpsVal.innerText = `${currentFps} FPS`;
+      fpsVal.style.color = currentFps >= 50 ? '#22c55e' : (currentFps >= 30 ? '#f59e0b' : '#ef4444');
+      const msElem = document.getElementById('ms-val');
+      if (msElem) msElem.innerText = `${currentFrameMs}ms`;
+      const enElem = document.getElementById('fps-enemies');
+      if (enElem) enElem.innerText = activeEnemies;
+      const prElem = document.getElementById('fps-projectiles');
+      if (prElem) prElem.innerText = activeProjs;
+      const itElem = document.getElementById('fps-items');
+      if (itElem) itElem.innerText = activeItems;
+      const totElem = document.getElementById('fps-total-ents');
+      if (totElem) totElem.innerText = totalEnts;
+    }
+  }
   document.getElementById('badge-battery').innerText = `⚡ ${Math.ceil((player.battery / player.maxBattery) * 100)}%`;
   document.getElementById('badge-battery').className = 'stat-badge badge-battery' + (player.battery < 20 ? ' low' : '');
   document.getElementById('badge-clock').innerText = `🕒 ${timeStr}`;
