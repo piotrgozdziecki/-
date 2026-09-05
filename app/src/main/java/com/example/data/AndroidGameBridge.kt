@@ -9,10 +9,33 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+
+data class HudTelemetryState(
+    val batteryPct: Float = 100f,
+    val maxBattery: Float = 100f,
+    val currentBattery: Float = 100f,
+    val voltageText: String = "48.4V",
+    val level: Int = 1,
+    val xpProgress: Float = 0f,
+    val kills: Int = 0,
+    val sector: String = "ZONE: S1",
+    val shiftTime: String = "03:15",
+    val weaponName: String = "SKANER ZEBRA DS3678",
+    val weaponLevel: Int = 1,
+    val weaponIcon: String = "⚡",
+    val comboCount: Int = 1,
+    val comboMultiplier: Float = 1.0f,
+    val threatLevel: String = "CZYSTY",
+    val threatDistance: Float = 999f,
+    val isLowBattery: Boolean = false,
+    val isGameActive: Boolean = true
+)
 
 class AndroidGameBridge(
     private val context: Context,
@@ -21,6 +44,72 @@ class AndroidGameBridge(
     private val getWebView: () -> WebView?
 ) {
     var onComposeLevelUpRequested: ((Int) -> Unit)? = null
+
+    private val _hudState = MutableStateFlow(HudTelemetryState())
+    val hudState: StateFlow<HudTelemetryState> = _hudState
+
+    @JavascriptInterface
+    fun updateHudTelemetry(
+        batteryPct: Float,
+        maxBattery: Float,
+        currentBattery: Float,
+        voltage: String,
+        level: Int,
+        xpProgress: Float,
+        kills: Int,
+        sector: String,
+        shiftTime: String,
+        weaponName: String,
+        weaponLevel: Int,
+        weaponIcon: String,
+        comboCount: Int,
+        comboMult: Float,
+        threatLevel: String,
+        threatDist: Float,
+        isGameActive: Boolean
+    ) {
+        _hudState.value = HudTelemetryState(
+            batteryPct = batteryPct,
+            maxBattery = maxBattery,
+            currentBattery = currentBattery,
+            voltageText = if (voltage.isBlank()) "48.4V" else voltage,
+            level = level,
+            xpProgress = xpProgress.coerceIn(0f, 1f),
+            kills = kills,
+            sector = sector,
+            shiftTime = shiftTime,
+            weaponName = weaponName,
+            weaponLevel = weaponLevel,
+            weaponIcon = weaponIcon,
+            comboCount = comboCount,
+            comboMultiplier = comboMult,
+            threatLevel = threatLevel,
+            threatDistance = threatDist,
+            isLowBattery = batteryPct <= 25f,
+            isGameActive = isGameActive
+        )
+    }
+
+    fun toggleZoomInGame() {
+        vibrate(30)
+        scope.launch(Dispatchers.Main) {
+            getWebView()?.evaluateJavascript("if (window.toggleZoom) window.toggleZoom();", null)
+        }
+    }
+
+    fun togglePauseInGame() {
+        vibrate(40)
+        scope.launch(Dispatchers.Main) {
+            getWebView()?.evaluateJavascript("if (window.togglePause) window.togglePause();", null)
+        }
+    }
+
+    fun toggleFpsInGame() {
+        vibrate(30)
+        scope.launch(Dispatchers.Main) {
+            getWebView()?.evaluateJavascript("if (window.toggleFpsDetails) window.toggleFpsDetails();", null)
+        }
+    }
 
     @JavascriptInterface
     fun triggerComposeLevelUp(level: Int) {

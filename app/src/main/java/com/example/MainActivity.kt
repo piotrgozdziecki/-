@@ -57,6 +57,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.data.AndroidGameBridge
 import com.example.data.AppDatabase
 import com.example.data.GameRepository
+import com.example.ui.ForkliftHudComposeOverlay
 import com.example.ui.IntroComposeScreen
 import com.example.ui.theme.MyApplicationTheme
 
@@ -76,6 +77,13 @@ class MainActivity : ComponentActivity() {
         WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
     }
 
+    // Poco F6 / Snapdragon 8s Gen 3 Ultra-High 120Hz Refresh Rate Setup
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      try {
+        window.attributes.preferredRefreshRate = 120f
+      } catch (_: Exception) {}
+    }
+
     enableEdgeToEdge()
     setContent {
       MyApplicationTheme {
@@ -89,7 +97,7 @@ class MainActivity : ComponentActivity() {
         Box(
           modifier = Modifier.fillMaxSize()
         ) {
-          // Background Game Engine (WebView)
+          // Background Game Engine (WebView / 3D Engine Surface)
           GameWebView(
             repository = repository,
             onWebViewCreated = { webView ->
@@ -105,6 +113,12 @@ class MainActivity : ComponentActivity() {
             onPageFinished = {
               isWebViewLoaded = true
             }
+          )
+
+          // High-Fidelity Compose Forklift HUD Overlay (Toyota BT Reflex 48V, XP Bar, Weapon Deck)
+          ForkliftHudComposeOverlay(
+            bridge = bridgeRef,
+            isVisible = !showIntroScreen && !showCardSelectionScreen
           )
 
           // Compose Level-Up Card Selection Overlay

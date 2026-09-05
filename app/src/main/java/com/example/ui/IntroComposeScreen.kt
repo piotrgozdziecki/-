@@ -10,6 +10,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -71,12 +72,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.AndroidGameBridge
 
 // --- TACTICAL DATA STRUCTURES ---
@@ -413,6 +417,62 @@ fun IntroComposeScreen(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.9.sp
                     )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // HERO GRAPHIC ASSET: TOYOTA BT REFLEX CYBER-LOGISTICS TRUCK
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(115.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .border(1.dp, Color(0xFF0284C7).copy(alpha = 0.6f), RoundedCornerShape(4.dp))
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.img_toyota_bt_reflex),
+                            contentDescription = "Toyota BT Reflex Reach Truck",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                        // Cyber gradient overlay for text readability & industrial telemetry
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            Color(0xCC030712)
+                                        )
+                                    )
+                                )
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.BottomStart)
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "TOYOTA BT REFLEX // REACH TRUCK 48V",
+                                color = Color(0xFFF97316),
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 0.8.sp
+                            )
+                            Text(
+                                text = "POCO F6 120 FPS // VULKAN ACCEL",
+                                color = Color(0xFF38BDF8),
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
+                    }
                 }
             }
 

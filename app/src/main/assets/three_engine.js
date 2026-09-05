@@ -180,7 +180,7 @@
 
         // 4. 3D Scene with Crispy Clear Background (No Fog for Perfect Visibility)
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x05070f);
+        this.scene.background = new THREE.Color(0x0f172a);
 
         // 5. Isometric-Tilted Fixed-Aspect Camera (Spectacular 3D Depth)
         this.camera = new THREE.PerspectiveCamera(46, width / height, 10, 12000);
@@ -439,7 +439,8 @@
       this.materials.floor = new THREE.MeshStandardMaterial({
         map: this.textures.floor,
         roughness: 0.35,
-        metalness: 0.15
+        metalness: 0.15,
+        side: THREE.DoubleSide
       });
 
       this.materials.toyotaOrange = new THREE.MeshStandardMaterial({
@@ -575,23 +576,14 @@
       this.shellsBatch.count = 0;
       this.scene.add(this.shellsBatch);
     },
-        metalness: 0.2
-      });
-
-      this.materials.bossTruck = new THREE.MeshStandardMaterial({
-        color: 0xef4444, // Vibrant crimson red
-        roughness: 0.25,
-        metalness: 0.75
-      });
-    },
 
     initLighting() {
-      // 1. Dark Atmospheric Blue/Grey Ambient Light (Gritty Tactical Night Shift)
-      this.ambientLight = new THREE.AmbientLight(0x0b1329, 0.28);
+      // 1. Crisp Industrial Ambient Light (Bright & High-Contrast Warehouse)
+      this.ambientLight = new THREE.AmbientLight(0xe2e8f0, 1.35);
       this.scene.add(this.ambientLight);
 
       // 2. High-Bay Overhead Key Light (Casts dramatic long shadows)
-      this.dirLight = new THREE.DirectionalLight(0x1e293b, 0.65);
+      this.dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
       this.dirLight.position.set(1900 + 400, -1900 - 700, 1400);
       this.dirLight.target.position.set(1900, -1900, 0);
       this.dirLight.castShadow = true;

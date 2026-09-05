@@ -158,6 +158,9 @@
     }
 
     /* Battery / Power Core Module */
+    body.android-native-bridge #hud {
+      display: none !important;
+    }
     .hud-battery-card {
       border-left: 3px solid #22c55e;
       border-color: rgba(34, 197, 94, 0.3);
@@ -3711,14 +3714,41 @@ function updateFloatingUiOverlays() {
 
 window.onAndroidReady = function() {
   console.log("ANDROID READY SIGNAL RECEIVED");
+  document.body.classList.add('android-native-bridge');
   resizeCanvas(); // One more resize when Android is ready
   if (window.AndroidBridge && window.AndroidBridge.requestInitialData) {
     window.AndroidBridge.requestInitialData();
   }
 };
-if (window.AndroidBridge && window.AndroidBridge.requestInitialData) {
-  window.AndroidBridge.requestInitialData();
+if (window.AndroidBridge) {
+  document.body.classList.add('android-native-bridge');
+  if (window.AndroidBridge.requestInitialData) {
+    window.AndroidBridge.requestInitialData();
+  }
 }
+
+window.toggleZoom = function() {
+  if (typeof camera !== 'undefined') {
+    if (camera.zoom >= 0.58) camera.zoom = 0.50;
+    else if (camera.zoom >= 0.48) camera.zoom = 0.40;
+    else camera.zoom = 0.60;
+    const el = document.getElementById('badge-zoom-label');
+    if (el) el.innerText = camera.zoom.toFixed(2) + 'x';
+  }
+};
+
+window.togglePause = function() {
+  if (typeof togglePause === 'function') {
+    togglePause();
+  }
+};
+
+window.toggleFpsDetails = function() {
+  const panel = document.getElementById('fps-monitor-details');
+  if (panel) {
+    panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'block' : 'none';
+  }
+};
 
 const unlockedRunAchievements = new Set();
 
@@ -8985,6 +9015,49 @@ player.x += player.vx * dt;
   if (xpFillElem) xpFillElem.style.width = `${Math.min(100, (currentXP / neededXP) * 100)}%`;
 
   updateBossTopBar();
+
+  // 6. Real-Time Telemetry Synchronization with Jetpack Compose HUD (Poco F6 120 FPS)
+  if (window.AndroidBridge && window.AndroidBridge.updateHudTelemetry) {
+    let activeWName = 'SKANER ZEBRA';
+    let activeWLevel = 1;
+    let activeWIcon = '⚡';
+    if (typeof weapons !== 'undefined') {
+      for (const [k, w] of Object.entries(weapons)) {
+        if (w.level > 0) {
+          activeWName = w.name || k;
+          activeWLevel = w.level;
+          activeWIcon = w.icon || '⚡';
+          break;
+        }
+      }
+    }
+    const sectorStr = `ZONE: S${currentSector || 1}`;
+    const xpProg = (typeof neededXP !== 'undefined' && neededXP > 0) ? (currentXP / neededXP) : 0;
+    const isPlaying = (typeof gameState !== 'undefined') ? (gameState === STATE.PLAYING) : true;
+    const threatDistMeters = (closestDist && closestDist < 9999) ? (closestDist / 28) : 999;
+    const threatLvl = nearbyThreatCount >= 14 || closestDist < 90 ? 'KRYTYCZNE' : (nearbyThreatCount >= 5 || closestDist < 220 ? 'UWAGA' : 'CZYSTY');
+    const volt = (44.0 + (player.battery / Math.max(1, player.maxBattery)) * 4.8).toFixed(1) + 'V';
+
+    window.AndroidBridge.updateHudTelemetry(
+      batteryPct,
+      player.maxBattery,
+      player.battery,
+      volt,
+      playerLevel,
+      xpProg,
+      kills,
+      sectorStr,
+      timeStr,
+      activeWName,
+      activeWLevel,
+      activeWIcon,
+      totalCombo,
+      parseFloat(currentMult) || 1.0,
+      threatLvl,
+      threatDistMeters,
+      isPlaying
+    );
+  }
 }
 
 // --- RENDER PASS (ULTRA HIGH FIDELITY WAREHOUSE GRAPHICS) ---
