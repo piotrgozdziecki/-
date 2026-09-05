@@ -61,6 +61,17 @@ android {
     includeInApk = false
     includeInBundle = true
   }
+  packaging {
+    jniLibs {
+      keepDebugSymbols.add("*/arm64-v8a/*.so")
+      keepDebugSymbols.add("*/armeabi-v7a/*.so")
+      keepDebugSymbols.add("*/x86/*.so")
+      keepDebugSymbols.add("*/x86_64/*.so")
+      pickFirsts.add("lib/*/libunity.so")
+      pickFirsts.add("lib/*/libmain.so")
+      pickFirsts.add("lib/*/libil2cpp.so")
+    }
+  }
 }
 
 // Configure the Secrets Gradle Plugin to use .env and .env.example files

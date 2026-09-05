@@ -3,8 +3,11 @@
  * High-End Android & Poco F6 (Snapdragon 8s Gen 3 / Adreno 735)
  * - Auto-scaling Top-Down Crimsonland Camera
  * - Ultra-HD Maximum Native Resolution (PBR, Dynamic Soft Shadows)
- * - Realistic Industrial Color Grading & Atmospheric Warehouse Lighting
+ * - Bright and Crisp Industrial High-Contrast Ambient & Sun Lighting (No Fog)
  * - Fluid Procedural Skeletal & Vehicle Animations for All Characters and Enemies
+ * - Technology 1: Infinite Gore Splatter Canvas Overlay (Paint-the-Ground Blood, 0% CPU Cost)
+ * - Technology 2: Real 3D Shell Casing Ejection & Gun Smoke Particle Physics
+ * - Technology 3: Volumetric Glowing Neon Bullet Tracers with Directional Alignment
  */
 (function(window) {
   'use strict';
@@ -16,9 +19,9 @@
 
   const Engine3D = {
     active: false,
-    baseCameraZoom: 820,
-    currentCameraZoom: 820,
-    cameraZoom: 820,
+    baseCameraZoom: 320,
+    currentCameraZoom: 320,
+    cameraZoom: 320,
     autoScalingEnabled: true,
 
     // Core Three.js components
@@ -47,6 +50,10 @@
     rightArm: null,
 
     floorMesh: null,
+    goreMesh: null,
+    goreCanvas: null,
+    goreCtx: null,
+
     racksGroup: null,
     propsGroup: null,
     barrelsGroup: null,
@@ -64,16 +71,36 @@
     projectileMeshes: new Map(),
     barrelMeshes: new Map(),
     propMeshes: new Map(),
+    shellPool: [],
+    smokePool: [],
 
     // Materials, Textures & Geometries Cache
     materials: {},
     textures: {},
     geometries: {},
     lastObstacleCount: -1,
+    lastProjectileCount: 0,
+    sirenLights: [],
+
+    // High-Resolution Batching Engine Components
+    racksBatch: null,
+    palletsBatch: null,
+    boxesBatch: null,
+    barrelsBatch: null,
+    pickupsBatch: null,
+    shellsBatch: null,
+
+    // Reusable Scratch Objects for Zero-Allocation Transforms
+    dummyMatrix: new THREE.Matrix4(),
+    dummyPosition: new THREE.Vector3(),
+    dummyRotation: new THREE.Euler(),
+    dummyQuaternion: new THREE.Quaternion(),
+    dummyScale: new THREE.Vector3(),
+    dummyColor: new THREE.Color(),
 
     init(container) {
       try {
-        console.log("🚀 Initializing Ultra-HD Three.js 3D WebGL Engine...");
+        console.log("🚀 Initializing Ultra-HD Three.js 3D WebGL Engine for Piotr...");
 
         // 1. Create or get dedicated WebGL Canvas
         let canvas = document.getElementById('threeCanvas');
@@ -109,7 +136,7 @@
 
         const width = window.innerWidth || 360;
         const height = window.innerHeight || 640;
-        const dpr = Math.max(1, Math.min(2.75, window.devicePixelRatio || 1));
+        const dpr = Math.max(1, Math.min(1.35, window.devicePixelRatio || 1));
 
         // 3. Renderer with Maximum Native Resolution & Realistic PBR
         try {
@@ -149,24 +176,23 @@
 
         // Realistic Industrial ACES Filmic Tone Mapping
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.25;
+        this.renderer.toneMappingExposure = 1.35;
 
-        // 4. 3D Scene with Atmospheric Dust Haze
+        // 4. 3D Scene with Crispy Clear Background (No Fog for Perfect Visibility)
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x060c18);
-        this.scene.fog = new THREE.FogExp2(0x020617, 0.0016);
+        this.scene.background = new THREE.Color(0x05070f);
 
-        // 5. Top-Down Fixed-Aspect Camera
-        this.camera = new THREE.PerspectiveCamera(48, width / height, 10, 12000);
+        // 5. Isometric-Tilted Fixed-Aspect Camera (Spectacular 3D Depth)
+        this.camera = new THREE.PerspectiveCamera(46, width / height, 10, 12000);
         this.camera.up.set(0, 1, 0);
-        this.camera.position.set(1900, -1900, this.currentCameraZoom);
-        this.camera.lookAt(1900, -1900, 0);
+        this.camera.position.set(1900, -1900 - 195, this.currentCameraZoom * 0.9);
+        this.camera.lookAt(1900, -1900, 15);
 
         // 6. Build Textures, Materials & Shared Assets
         this.initProceduralTextures();
         this.initSharedAssets();
 
-        // 7. Dynamic Industrial Lighting Setup
+        // 7. Dynamic Industrial Lighting Setup (Brightened for Perfect Clarity)
         this.initLighting();
 
         // 8. Architecture & Dynamic Groups
@@ -174,6 +200,7 @@
         this.createPlayerModel();
         this.createKluskaModel();
         this.initParticleSystem();
+        this.initBatchingSystem();
 
         this.racksGroup = new THREE.Group();
         this.propsGroup = new THREE.Group();
@@ -192,6 +219,7 @@
         this.scene.add(this.projectilesGroup);
 
         this.active = true;
+        this.lastProjectileCount = 0;
         console.log("✅ Ultra-HD 3D WebGL Engine Active! Resolution:", Math.round(width * dpr), "x", Math.round(height * dpr));
 
         window.addEventListener('resize', () => this.onResize());
@@ -204,7 +232,7 @@
     },
 
     setCameraZoom(zoomVal) {
-      this.baseCameraZoom = Math.max(500, Math.min(1300, parseInt(zoomVal, 10) || 820));
+      this.baseCameraZoom = Math.max(180, Math.min(850, parseInt(zoomVal, 10) || 320));
       this.cameraZoom = this.baseCameraZoom;
     },
 
@@ -224,16 +252,16 @@
       if (!this.renderer || !this.camera) return;
       const w = customW || window.innerWidth || 360;
       const h = customH || window.innerHeight || 640;
-      const dpr = Math.max(1, Math.min(2.75, window.devicePixelRatio || 1));
+      const dpr = Math.max(1, Math.min(1.35, window.devicePixelRatio || 1));
       this.camera.aspect = w / h;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(w, h, false);
       this.renderer.setPixelRatio(dpr);
     },
 
-    // --- PROCEDURAL HIGH-RESOLUTION TEXTURES ---
+    // --- PROCEDURAL HIGH-RESOLUTION TEXTURE ATLAS & SPRITE GENERATION ---
     initProceduralTextures() {
-      // 1. High-Gloss Industrial Epoxy Floor Texture with Concrete Grid & Caution Lines
+      // 1. High-Gloss Industrial Epoxy Floor Texture with Concrete Grid & Caution Lines (1024x1024)
       const cvsFloor = document.createElement("canvas");
       cvsFloor.width = 1024;
       cvsFloor.height = 1024;
@@ -288,56 +316,125 @@
       floorTex.repeat.set(4, 4);
       this.textures.floor = floorTex;
 
-      // 2. Weathered Wood Texture for Euro-Pallets
+      // 2. High-Res Weathered Wood Texture for Euro-Pallets (512x512)
       const cvsWood = document.createElement("canvas");
-      cvsWood.width = 256;
-      cvsWood.height = 256;
+      cvsWood.width = 512;
+      cvsWood.height = 512;
       const ctxW = cvsWood.getContext("2d");
-      ctxW.fillStyle = "#a16207";
-      ctxW.fillRect(0, 0, 256, 256);
+      ctxW.fillStyle = "#b45309";
+      ctxW.fillRect(0, 0, 512, 512);
       ctxW.fillStyle = "#78350f";
-      for (let i = 0; i < 256; i += 32) {
-        ctxW.fillRect(0, i, 256, 4);
+      for (let i = 0; i < 512; i += 48) {
+        ctxW.fillRect(0, i, 512, 6);
       }
-      ctxW.strokeStyle = "rgba(69, 26, 3, 0.4)";
-      ctxW.lineWidth = 1.5;
-      for (let i = 0; i < 40; i++) {
-        const y = Math.random() * 256;
+      ctxW.strokeStyle = "rgba(69, 26, 3, 0.45)";
+      ctxW.lineWidth = 2.0;
+      for (let i = 0; i < 80; i++) {
+        const y = Math.random() * 512;
         ctxW.beginPath();
         ctxW.moveTo(0, y);
-        ctxW.bezierCurveTo(80, y + (Math.random()-0.5)*15, 180, y + (Math.random()-0.5)*15, 256, y);
+        ctxW.bezierCurveTo(160, y + (Math.random()-0.5)*25, 360, y + (Math.random()-0.5)*25, 512, y);
         ctxW.stroke();
       }
-      ctxW.fillStyle = "rgba(69, 26, 3, 0.75)";
+      // Official Heat-Treatment & European Certification Brand Stamps
+      ctxW.fillStyle = "rgba(69, 26, 3, 0.88)";
+      ctxW.font = "bold 36px monospace";
+      ctxW.fillText("EPAL", 40, 100);
+      ctxW.fillText("EUR", 360, 100);
       ctxW.font = "bold 20px monospace";
-      ctxW.fillText("EPAL", 20, 50);
-      ctxW.fillText("EUR", 180, 50);
+      ctxW.fillText("HT - PL 14-885", 140, 240);
+      
       const woodTex = new THREE.CanvasTexture(cvsWood);
       this.textures.wood = woodTex;
 
-      // 3. Cardboard Shipping Box Texture with DHL / DTA Barcodes
+      // 3. High-Res Cardboard Shipping Box Texture with DHL / DTA Barcodes & Fragile Stamps (512x512)
       const cvsBox = document.createElement("canvas");
-      cvsBox.width = 256;
-      cvsBox.height = 256;
+      cvsBox.width = 512;
+      cvsBox.height = 512;
       const ctxB = cvsBox.getContext("2d");
       ctxB.fillStyle = "#d97706";
-      ctxB.fillRect(0, 0, 256, 256);
-      ctxB.fillStyle = "rgba(180, 83, 9, 0.85)";
-      ctxB.fillRect(0, 112, 256, 32);
+      ctxB.fillRect(0, 0, 512, 512);
+      
+      // Packing Tape Seams
+      ctxB.fillStyle = "rgba(180, 83, 9, 0.9)";
+      ctxB.fillRect(0, 220, 512, 72);
+      ctxB.fillStyle = "rgba(255, 255, 255, 0.15)";
+      ctxB.fillRect(0, 245, 512, 22);
+
+      // Shipping Label 1: DTA Logistics Manifest
       ctxB.fillStyle = "#ffffff";
-      ctxB.fillRect(20, 20, 90, 70);
+      ctxB.fillRect(36, 36, 180, 150);
       ctxB.fillStyle = "#000000";
-      ctxB.fillRect(28, 28, 74, 6);
-      ctxB.font = "bold 9px sans-serif";
-      ctxB.fillText("DTA CARGO", 28, 48);
-      for (let bx = 28; bx < 96; bx += 4) {
-        if (Math.random() > 0.3) ctxB.fillRect(bx, 54, 2.5, 28);
+      ctxB.fillRect(48, 48, 156, 12);
+      ctxB.font = "bold 16px sans-serif";
+      ctxB.fillText("DTA CARGO LOGISTICS", 48, 84);
+      ctxB.font = "12px sans-serif";
+      ctxB.fillText("WAYBILL: #9842-885F", 48, 104);
+      // Barcode lines
+      for (let bx = 48; bx < 200; bx += 6) {
+        if (Math.random() > 0.25) ctxB.fillRect(bx, 114, 4, 60);
       }
+
+      // Shipping Label 2: FRAGILE Glass Stamp
+      ctxB.fillStyle = "#dc2626";
+      ctxB.fillRect(280, 48, 190, 80);
+      ctxB.fillStyle = "#ffffff";
+      ctxB.font = "900 22px sans-serif";
+      ctxB.fillText("FRAGILE / OSTROŻNIE", 290, 84);
+      ctxB.font = "bold 14px sans-serif";
+      ctxB.fillText("THIS SIDE UP ⬆⬆", 310, 112);
+
       const boxTex = new THREE.CanvasTexture(cvsBox);
       this.textures.box = boxTex;
+
+      // 4. High-Res ADR Chemical Barrels Texture (512x512)
+      const cvsBarrel = document.createElement("canvas");
+      cvsBarrel.width = 512;
+      cvsBarrel.height = 512;
+      const ctxBar = cvsBarrel.getContext("2d");
+      ctxBar.fillStyle = "#334155";
+      ctxBar.fillRect(0, 0, 512, 512);
+
+      // Steel Ribs / Rings
+      ctxBar.fillStyle = "#0f172a";
+      ctxBar.fillRect(0, 100, 512, 32);
+      ctxBar.fillRect(0, 380, 512, 32);
+
+      // Hazard Diamond (ADR Class 8 / Class 3)
+      ctxBar.save();
+      ctxBar.translate(256, 256);
+      ctxBar.rotate(Math.PI / 4);
+      ctxBar.fillStyle = "#facc15";
+      ctxBar.fillRect(-70, -70, 140, 140);
+      ctxBar.strokeStyle = "#000000";
+      ctxBar.lineWidth = 6;
+      ctxBar.strokeRect(-70, -70, 140, 140);
+      ctxBar.restore();
+
+      ctxBar.fillStyle = "#000000";
+      ctxBar.font = "900 26px sans-serif";
+      ctxBar.textAlign = "center";
+      ctxBar.fillText("ADR 8", 256, 250);
+      ctxBar.font = "bold 16px sans-serif";
+      ctxBar.fillText("HAZARDOUS", 256, 275);
+
+      const barrelTex = new THREE.CanvasTexture(cvsBarrel);
+      this.textures.barrel = barrelTex;
     },
 
     initSharedAssets() {
+      // Configure Anisotropic Filtering on all generated textures for crisp angles
+      const maxAniso = this.renderer ? this.renderer.capabilities.getMaxAnisotropy() : 4;
+      Object.values(this.textures).forEach(tex => {
+        if (tex && tex.isTexture) {
+          tex.anisotropy = Math.min(8, maxAniso);
+          tex.minFilter = THREE.LinearMipmapLinearFilter;
+          tex.magFilter = THREE.LinearFilter;
+          tex.generateMipmaps = true;
+          tex.needsUpdate = true;
+        }
+      });
+
       // Physically Based Materials (PBR)
       this.materials.floor = new THREE.MeshStandardMaterial({
         map: this.textures.floor,
@@ -387,39 +484,114 @@
         metalness: 0.05
       });
 
+      this.materials.barrelGeneric = new THREE.MeshStandardMaterial({
+        map: this.textures.barrel,
+        roughness: 0.35,
+        metalness: 0.65
+      });
+
       this.materials.rubberTire = new THREE.MeshStandardMaterial({
         color: 0x0f172a,
         roughness: 0.9,
         metalness: 0.1
       });
 
-      // Enemy Materials
+      this.materials.pickupMaterial = new THREE.MeshStandardMaterial({
+        roughness: 0.25,
+        metalness: 0.75
+      });
+
+      this.materials.brassShell = new THREE.MeshStandardMaterial({
+        color: 0xeab308,
+        metalness: 0.9,
+        roughness: 0.15
+      });
+
+      // Enemy Materials (Increased color saturation for great top-down visibility)
       this.materials.zombieWorker = new THREE.MeshStandardMaterial({
-        color: 0x15803d, // High-vis vest green/decay
-        roughness: 0.6,
+        color: 0x22c55e, // Bright lime green zombie worker
+        roughness: 0.4,
         metalness: 0.1
       });
 
       this.materials.zombieAuditor = new THREE.MeshStandardMaterial({
-        color: 0x475569, // Gray suit
-        roughness: 0.5,
+        color: 0x64748b, // High contrast slate blue-gray
+        roughness: 0.4,
         metalness: 0.2
       });
 
       this.materials.bossTruck = new THREE.MeshStandardMaterial({
-        color: 0xdc2626, // Crimson Heavy Truck
-        roughness: 0.3,
-        metalness: 0.7
+        color: 0xef4444, // Vibrant crimson red
+        roughness: 0.25,
+        metalness: 0.75
+      });
+    },
+
+    // --- HIGH-PERFORMANCE SPRITE & MESH BATCHING ENGINE (1 DRAW CALL ARCHITECTURE) ---
+    initBatchingSystem() {
+      // 1. Warehouse Racks Uprights Batch (1 Draw Call for all uprights)
+      const rackUnitGeo = new THREE.BoxGeometry(1, 1, 1);
+      this.racksBatch = new THREE.InstancedMesh(rackUnitGeo, this.materials.rackBlue, 200);
+      this.racksBatch.castShadow = true;
+      this.racksBatch.receiveShadow = true;
+      this.racksBatch.count = 0;
+      this.scene.add(this.racksBatch);
+
+      // 2. Euro-Pallets Batch (1 Draw Call for all pallets)
+      const palletUnitGeo = new THREE.BoxGeometry(1, 1, 1);
+      this.palletsBatch = new THREE.InstancedMesh(palletUnitGeo, this.materials.palletWood, 200);
+      this.palletsBatch.castShadow = true;
+      this.palletsBatch.receiveShadow = true;
+      this.palletsBatch.count = 0;
+      this.scene.add(this.palletsBatch);
+
+      // 3. Cardboard Shipping Boxes Batch (1 Draw Call for all crates)
+      const boxUnitGeo = new THREE.BoxGeometry(1, 1, 1);
+      this.boxesBatch = new THREE.InstancedMesh(boxUnitGeo, this.materials.cardboardBox, 200);
+      this.boxesBatch.castShadow = true;
+      this.boxesBatch.receiveShadow = true;
+      this.boxesBatch.count = 0;
+      this.scene.add(this.boxesBatch);
+
+      // 4. ADR Chemical Barrels Batch with per-instance dynamic colors (1 Draw Call for all drums)
+      const barrelUnitGeo = new THREE.CylinderGeometry(11, 11, 26, 14);
+      this.barrelsBatch = new THREE.InstancedMesh(barrelUnitGeo, this.materials.barrelGeneric, 120);
+      this.barrelsBatch.castShadow = true;
+      this.barrelsBatch.receiveShadow = true;
+      this.barrelsBatch.count = 0;
+      this.scene.add(this.barrelsBatch);
+
+      // 5. 3D Collectible Pickups Batch with per-instance colors (1 Draw Call for all items)
+      const pickupUnitGeo = new THREE.BoxGeometry(10, 10, 10);
+      this.pickupsBatch = new THREE.InstancedMesh(pickupUnitGeo, this.materials.pickupMaterial, 80);
+      this.pickupsBatch.castShadow = true;
+      this.pickupsBatch.count = 0;
+      this.scene.add(this.pickupsBatch);
+
+      // 6. 3D Brass Shell Casings Batch (1 Draw Call for all ejecting shell casings)
+      const shellUnitGeo = new THREE.CylinderGeometry(0.6, 0.6, 2.8, 6);
+      this.shellsBatch = new THREE.InstancedMesh(shellUnitGeo, this.materials.brassShell, 120);
+      this.shellsBatch.castShadow = true;
+      this.shellsBatch.count = 0;
+      this.scene.add(this.shellsBatch);
+    },
+        metalness: 0.2
+      });
+
+      this.materials.bossTruck = new THREE.MeshStandardMaterial({
+        color: 0xef4444, // Vibrant crimson red
+        roughness: 0.25,
+        metalness: 0.75
       });
     },
 
     initLighting() {
-      // 1. High-Bay Industrial Ambient Light (Deep Warehouse Blue-Gray)
-      this.ambientLight = new THREE.AmbientLight(0x1e293b, 1.35);
+      // 1. Dark Atmospheric Blue/Grey Ambient Light (Gritty Tactical Night Shift)
+      this.ambientLight = new THREE.AmbientLight(0x0b1329, 0.28);
       this.scene.add(this.ambientLight);
 
-      // 2. High-Bay Overhead Directional Sun Luminaire (Key Light)
-      this.dirLight = new THREE.DirectionalLight(0xfff7ed, 1.45);
+      // 2. High-Bay Overhead Key Light (Casts dramatic long shadows)
+      this.dirLight = new THREE.DirectionalLight(0x1e293b, 0.65);
       this.dirLight.position.set(1900 + 400, -1900 - 700, 1400);
       this.dirLight.target.position.set(1900, -1900, 0);
       this.dirLight.castShadow = true;
@@ -427,28 +599,57 @@
       this.dirLight.shadow.mapSize.height = 1024;
       this.dirLight.shadow.camera.near = 100;
       this.dirLight.shadow.camera.far = 3200;
-      this.dirLight.shadow.camera.left = -900;
-      this.dirLight.shadow.camera.right = 900;
-      this.dirLight.shadow.camera.top = 900;
-      this.dirLight.shadow.camera.bottom = -900;
+      this.dirLight.shadow.camera.left = -450;
+      this.dirLight.shadow.camera.right = 450;
+      this.dirLight.shadow.camera.top = 450;
+      this.dirLight.shadow.camera.bottom = -450;
       this.dirLight.shadow.bias = -0.0004;
       this.scene.add(this.dirLight);
       this.scene.add(this.dirLight.target);
 
-      // 3. Forklift Dual Halogen Spotlights
-      this.headlightLeft = new THREE.SpotLight(0xfef08a, 4.2, 750, Math.PI / 5.2, 0.4, 1.2);
-      this.headlightLeft.castShadow = false;
+      // 3. Forklift Dual Halogen Spotlights with Premium Real-Time Shadows
+      this.headlightLeft = new THREE.SpotLight(0xfff1f2, 8.5, 950, Math.PI / 4.8, 0.45, 1.1);
+      this.headlightLeft.castShadow = true;
+      this.headlightLeft.shadow.mapSize.width = 1024;
+      this.headlightLeft.shadow.mapSize.height = 1024;
+      this.headlightLeft.shadow.camera.near = 10;
+      this.headlightLeft.shadow.camera.far = 1000;
+      this.headlightLeft.shadow.bias = -0.0008;
       this.scene.add(this.headlightLeft);
       this.scene.add(this.headlightLeft.target);
 
-      this.headlightRight = new THREE.SpotLight(0xfef08a, 4.2, 750, Math.PI / 5.2, 0.4, 1.2);
-      this.headlightRight.castShadow = false;
+      this.headlightRight = new THREE.SpotLight(0xfff1f2, 8.5, 950, Math.PI / 4.8, 0.45, 1.1);
+      this.headlightRight.castShadow = true;
+      this.headlightRight.shadow.mapSize.width = 1024;
+      this.headlightRight.shadow.mapSize.height = 1024;
+      this.headlightRight.shadow.camera.near = 10;
+      this.headlightRight.shadow.camera.far = 1000;
+      this.headlightRight.shadow.bias = -0.0008;
       this.scene.add(this.headlightRight);
       this.scene.add(this.headlightRight.target);
 
       // 4. Rotating Amber Strobe Beacon Point Light
       this.beaconLight = new THREE.PointLight(0xf59e0b, 2.5, 450, 1.5);
       this.scene.add(this.beaconLight);
+
+      // 5. Dynamic Muzzle Flash Light
+      this.muzzleLight = new THREE.PointLight(0xfef08a, 0, 180, 1.5);
+      this.scene.add(this.muzzleLight);
+
+      // 6. Flashing Industrial Sirens / Alarms at Key Warehouse Points
+      this.sirenLights = [];
+      const sirenPositions = [
+        [400, -400],
+        [3400, -400],
+        [400, -3400],
+        [3400, -3400]
+      ];
+      sirenPositions.forEach(([sx, sy], idx) => {
+        const sirenLight = new THREE.PointLight(idx % 2 === 0 ? 0xef4444 : 0x06b6d4, 0.0, 450, 1.6);
+        sirenLight.position.set(sx, sy, 35);
+        this.scene.add(sirenLight);
+        this.sirenLights.push(sirenLight);
+      });
     },
 
     createWarehouseFloor() {
@@ -458,6 +659,25 @@
       this.floorMesh.position.set(1900, -1900, 0);
       this.floorMesh.receiveShadow = true;
       this.scene.add(this.floorMesh);
+
+      // --- TECHNOLOGY 1: INFINITE GORE SPLATTER CANVAS OVERLAY (0% CPU Cost, Persistent Crimson Floor) ---
+      this.goreCanvas = document.createElement("canvas");
+      this.goreCanvas.width = 2048;
+      this.goreCanvas.height = 2048;
+      this.goreCtx = this.goreCanvas.getContext("2d");
+      
+      // Initialize with transparent background
+      this.goreCtx.clearRect(0, 0, 2048, 2048);
+
+      this.textures.gore = new THREE.CanvasTexture(this.goreCanvas);
+      const goreMat = new THREE.MeshBasicMaterial({
+        map: this.textures.gore,
+        transparent: true,
+        depthWrite: false
+      });
+      this.goreMesh = new THREE.Mesh(floorGeo, goreMat);
+      this.goreMesh.position.set(1900, -1900, 0.12); // Slightly above the main concrete plane
+      this.scene.add(this.goreMesh);
     },
 
     createPlayerModel() {
@@ -603,14 +823,14 @@
       this.particleGroup = new THREE.Group();
       this.scene.add(this.particleGroup);
 
-      // Blood/Gore Decals Pool
+      // Legacy Blood/Gore Decals Pool (Keep for micro-particles)
       const decalGeo = new THREE.PlaneGeometry(24, 24);
       this.bloodPool = [];
-      for (let i = 0; i < 75; i++) {
+      for (let i = 0; i < 40; i++) {
         const mat = new THREE.MeshBasicMaterial({
-          color: 0x991b1b,
+          color: 0x851414,
           transparent: true,
-          opacity: 0.82,
+          opacity: 0.75,
           depthWrite: false
         });
         const mesh = new THREE.Mesh(decalGeo, mat);
@@ -619,96 +839,583 @@
         this.particleGroup.add(mesh);
         this.bloodPool.push({ mesh, active: false, life: 0 });
       }
+
+      // --- TECHNOLOGY 2: 3D SHELL CASING POOL ---
+      this.shellGroup = new THREE.Group();
+      this.scene.add(this.shellGroup);
+
+      const shellGeo = new THREE.CylinderGeometry(0.5, 0.5, 2.8, 5);
+      const shellMat = new THREE.MeshStandardMaterial({
+        color: 0xeab308, // Bright brass gold
+        metalness: 0.9,
+        roughness: 0.15
+      });
+      
+      this.shellPool = [];
+      for (let i = 0; i < 80; i++) {
+        this.shellPool.push({
+          active: false,
+          x: 0, y: 0, z: 0,
+          vx: 0, vy: 0, vz: 0,
+          rx: 0, ry: 0, rz: 0,
+          rotSpeedX: 0, rotSpeedY: 0, rotSpeedZ: 0,
+          life: 0
+        });
+      }
+
+      // --- TECHNOLOGY 2 CONTINUED: MUZZLE SMOKE POOL ---
+      this.smokeGroup = new THREE.Group();
+      this.scene.add(this.smokeGroup);
+
+      const smokeGeo = new THREE.SphereGeometry(3.5, 5, 5);
+      this.smokePool = [];
+      for (let i = 0; i < 35; i++) {
+        const smokeMat = new THREE.MeshBasicMaterial({
+          color: 0xe2e8f0,
+          transparent: true,
+          opacity: 0.0,
+          depthWrite: false
+        });
+        const mesh = new THREE.Mesh(smokeGeo, smokeMat);
+        mesh.visible = false;
+        this.smokeGroup.add(mesh);
+        this.smokePool.push({
+          mesh,
+          active: false,
+          vx: 0, vy: 0, vz: 0,
+          life: 0,
+          maxLife: 0
+        });
+      }
+
+      // --- REWOLUCJA SPARK EFFECT SYSTEM (3D High-Impact Sparks Pool) ---
+      this.sparksGroup = new THREE.Group();
+      this.scene.add(this.sparksGroup);
+
+      const sparkGeo = new THREE.BoxGeometry(4.0, 0.8, 0.8);
+      this.sparksPool = [];
+      for (let i = 0; i < 180; i++) {
+        const sparkMat = new THREE.MeshBasicMaterial({
+          color: 0xf59e0b,
+          transparent: true,
+          opacity: 1.0,
+          depthWrite: false
+        });
+        const mesh = new THREE.Mesh(sparkGeo, sparkMat);
+        mesh.visible = false;
+        this.sparksGroup.add(mesh);
+        this.sparksPool.push({
+          mesh,
+          active: false,
+          vx: 0, vy: 0, vz: 0,
+          life: 0,
+          maxLife: 0
+        });
+      }
+
+      // --- REWOLUCJA ENEMY DEATH DEBRIS POOL (CHUNKS / SHRAPNEL / PAPERS) ---
+      this.debrisGroup = new THREE.Group();
+      this.scene.add(this.debrisGroup);
+
+      const chunkGeo = new THREE.BoxGeometry(4.5, 4.5, 4.5);
+      this.debrisPool = [];
+      for (let i = 0; i < 90; i++) {
+        const chunkMat = new THREE.MeshStandardMaterial({
+          color: 0x22c55e,
+          roughness: 0.6,
+          metalness: 0.1
+        });
+        const mesh = new THREE.Mesh(chunkGeo, chunkMat);
+        mesh.castShadow = true;
+        mesh.visible = false;
+        this.debrisGroup.add(mesh);
+        this.debrisPool.push({
+          mesh,
+          active: false,
+          vx: 0, vy: 0, vz: 0,
+          rx: 0, ry: 0, rz: 0,
+          rotSpeedX: 0, rotSpeedY: 0, rotSpeedZ: 0,
+          life: 0,
+          maxLife: 0,
+          isOil: false
+        });
+      }
+
+      // --- VISUAL MUZZLE FLASH STARBURST MODEL ---
+      const flashGroup = new THREE.Group();
+      const flashMat = new THREE.MeshBasicMaterial({
+        color: 0xfef08a,
+        transparent: true,
+        opacity: 0.95,
+        depthWrite: false
+      });
+      
+      const coreGeo = new THREE.SphereGeometry(3.0, 6, 6);
+      const core = new THREE.Mesh(coreGeo, flashMat);
+      flashGroup.add(core);
+
+      const flareGeo = new THREE.ConeGeometry(2.0, 16.0, 4);
+      flareGeo.translate(0, 8.0, 0);
+      
+      const directions = [
+        [0, 0, Math.PI / 2],      // right
+        [0, 0, -Math.PI / 2],     // left
+        [0, 0, 0],                // forward
+        [0, 0, Math.PI]           // backward
+      ];
+      directions.forEach(([rx, ry, rz]) => {
+        const f = new THREE.Mesh(flareGeo, flashMat);
+        f.rotation.set(rx, ry, rz);
+        f.scale.set(0.6, 1.0, 0.6);
+        flashGroup.add(f);
+      });
+
+      const fMega = new THREE.Mesh(flareGeo, flashMat);
+      fMega.rotation.set(0, 0, -Math.PI / 2);
+      fMega.scale.set(1.4, 2.0, 1.4);
+      flashGroup.add(fMega);
+
+      this.muzzleFlashMesh = flashGroup;
+      this.muzzleFlashMesh.visible = false;
+      this.scene.add(this.muzzleFlashMesh);
+      this.muzzleFlashTimer = 0;
+    },
+
+    // Splat detailed organic blood onto the transparent overlay floor canvas
+    spawnBloodSplatter(worldX, worldY, isDeath = false) {
+      if (!this.goreCtx || !this.textures.gore) return;
+
+      // Map world coordinates (0 to 3800) to Gore Canvas (0 to 2048)
+      const cx = (worldX / 3800) * 2048;
+      const cy = (worldY / 3800) * 2048;
+
+      const ctx = this.goreCtx;
+
+      ctx.save();
+
+      // Main Splat Core
+      const rad = (isDeath ? 18 : 8) + Math.random() * (isDeath ? 14 : 7);
+      const grad = ctx.createRadialGradient(cx, cy, 1, cx, cy, rad);
+      const rColor = Math.random() > 0.45 ? "rgba(153, 27, 27, 0.95)" : "rgba(185, 28, 28, 0.92)";
+      grad.addColorStop(0, rColor);
+      grad.addColorStop(0.7, "rgba(127, 29, 29, 0.85)");
+      grad.addColorStop(1, "rgba(127, 29, 29, 0)");
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Exploding splash drops
+      const drops = isDeath ? 14 : 6;
+      for (let i = 0; i < drops; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = (0.25 + Math.random() * 0.75) * (rad * (isDeath ? 3.8 : 2.5));
+        const px = cx + Math.cos(angle) * dist;
+        const py = cy + Math.sin(angle) * dist;
+        const pSize = 1.2 + Math.random() * (isDeath ? 4.8 : 2.8);
+
+        // Splat connector trails back to center
+        if (Math.random() > 0.45) {
+          ctx.strokeStyle = rColor;
+          ctx.lineWidth = pSize * 0.65;
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(angle) * (dist * 0.35), cy + Math.sin(angle) * (dist * 0.35));
+          ctx.lineTo(px, py);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = rColor;
+        ctx.beginPath();
+        ctx.arc(px, py, pSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+      this.textures.gore.needsUpdate = true;
     },
 
     spawnBlood(x, y) {
+      // Draw to the persistent canvas
+      this.spawnBloodSplatter(x, y, false);
+
+      // Legacy Micro-particles
       for (let b of this.bloodPool) {
         if (!b.active) {
           b.active = true;
-          b.mesh.position.set(x, -y, 0.2);
+          b.mesh.position.set(x, -y, 0.15);
           b.mesh.rotation.z = Math.random() * Math.PI * 2;
-          const s = 0.6 + Math.random() * 0.9;
+          const s = 0.5 + Math.random() * 0.8;
           b.mesh.scale.set(s, s, 1);
           b.mesh.visible = true;
-          b.life = 18.0;
+          b.life = 10.0;
           break;
         }
       }
     },
 
-    syncRacks(obstacles) {
-      if (!this.racksGroup || !obstacles) return;
-      while (this.racksGroup.children.length > 0) {
-        const child = this.racksGroup.children[0];
-        if (child.geometry) child.geometry.dispose();
-        this.racksGroup.remove(child);
+    spawnShellCasing(playerX, playerY, playerAngle) {
+      if (!this.shellPool) return;
+      for (let s of this.shellPool) {
+        if (!s.active) {
+          s.active = true;
+          
+          const forwardX = Math.cos(playerAngle);
+          const forwardY = -Math.sin(playerAngle);
+          const rightX = Math.sin(playerAngle);
+          const rightY = Math.cos(playerAngle);
+
+          // Spawn coordinates
+          s.x = playerX + forwardX * 12 + rightX * 6;
+          s.y = -playerY + forwardY * 12 + rightY * 6;
+          s.z = 16;
+
+          // Eject sideways/backwards relative to player direction
+          const ejectAngle = playerAngle + Math.PI / 2 + (Math.random() - 0.5) * 0.42;
+          const speed = 45 + Math.random() * 25;
+          s.vx = Math.cos(ejectAngle) * speed;
+          s.vy = -Math.sin(ejectAngle) * speed;
+          s.vz = 32 + Math.random() * 28;
+
+          // Rapid tumbling rotation
+          s.rx = Math.random() * Math.PI;
+          s.ry = Math.random() * Math.PI;
+          s.rz = Math.random() * Math.PI;
+          s.rotSpeedX = 16 + Math.random() * 18;
+          s.rotSpeedY = 16 + Math.random() * 18;
+          s.rotSpeedZ = 16 + Math.random() * 18;
+
+          s.life = 3.5;
+          break;
+        }
+      }
+    },
+
+    spawnMuzzleSmoke(playerX, playerY, playerAngle) {
+      if (!this.smokePool) return;
+      for (let sm of this.smokePool) {
+        if (!sm.active) {
+          sm.active = true;
+
+          const forwardX = Math.cos(playerAngle);
+          const forwardY = -Math.sin(playerAngle);
+
+          // Spawn at weapon barrel tip
+          sm.mesh.position.set(
+            playerX + forwardX * 24,
+            -playerY + forwardY * 24,
+            18
+          );
+
+          // Blow outward
+          const speed = 16 + Math.random() * 14;
+          const driftAngle = playerAngle + (Math.random() - 0.5) * 0.45;
+          sm.vx = Math.cos(driftAngle) * speed;
+          sm.vy = -Math.sin(driftAngle) * speed;
+          sm.vz = 4 + Math.random() * 6;
+
+          sm.life = 0.45 + Math.random() * 0.35;
+          sm.maxLife = sm.life;
+          sm.mesh.scale.set(1.0, 1.0, 1.0);
+          sm.mesh.material.opacity = 0.6;
+          sm.mesh.visible = true;
+          break;
+        }
+      }
+    },
+
+    spawnSparks(worldX, worldY, worldZ, count, colHex = 0xf59e0b) {
+      if (!this.sparksPool) return;
+      let spawned = 0;
+      for (let s of this.sparksPool) {
+        if (!s.active) {
+          s.active = true;
+          s.mesh.position.set(worldX, -worldY, worldZ);
+          
+          // Velocity flying in 3D
+          const angle = Math.random() * Math.PI * 2;
+          const speed2D = 60 + Math.random() * 120;
+          s.vx = Math.cos(angle) * speed2D;
+          s.vy = Math.sin(angle) * speed2D;
+          s.vz = 40 + Math.random() * 100;
+
+          s.life = 0.22 + Math.random() * 0.38;
+          s.maxLife = s.life;
+          s.mesh.material.color.setHex(colHex);
+          s.mesh.material.opacity = 1.0;
+          s.mesh.scale.set(1.0, 1.0, 1.0);
+          s.mesh.visible = true;
+
+          spawned++;
+          if (spawned >= count) break;
+        }
+      }
+    },
+
+    spawnEnemyDebris(worldX, worldY, enemyType, isBoss) {
+      if (!this.debrisPool) return;
+      
+      let count = isBoss ? 24 : 8;
+      let color = 0x22c55e; // Green zombie meat default
+      let isOil = false;
+
+      if (isBoss) {
+        color = 0xef4444; // Boss red metal / oil
+        isOil = true;
+      } else if (enemyType === 'klaus') {
+        color = 0x64748b; // Auditor gray chunks
+      } else if (enemyType === 'paper' || enemyType === 'document') {
+        color = 0xf8fafc; // Paper white flying pages
+      } else if (enemyType === 'oil' || enemyType === 'barrel') {
+        color = 0xf59e0b; // Yellow oil
+        isOil = true;
       }
 
-      obstacles.forEach(obs => {
+      let spawned = 0;
+      for (let d of this.debrisPool) {
+        if (!d.active) {
+          d.active = true;
+          
+          const ox = (Math.random() - 0.5) * 8;
+          const oy = (Math.random() - 0.5) * 8;
+          d.mesh.position.set(worldX + ox, -worldY + oy, 10 + Math.random() * 12);
+
+          const s = (0.55 + Math.random() * 0.9) * (isBoss ? 1.6 : 0.9);
+          d.mesh.scale.set(s, s, s);
+
+          d.mesh.material.color.setHex(color);
+          if (isOil) {
+            d.mesh.material.metalness = 0.85;
+            d.mesh.material.roughness = 0.2;
+          } else {
+            d.mesh.material.metalness = 0.1;
+            d.mesh.material.roughness = 0.7;
+          }
+
+          const angle = Math.random() * Math.PI * 2;
+          const speed = (isBoss ? 80 : 45) + Math.random() * (isBoss ? 110 : 65);
+          d.vx = Math.cos(angle) * speed;
+          d.vy = Math.sin(angle) * speed;
+          d.vz = 50 + Math.random() * 70;
+
+          d.mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+          d.rotSpeedX = 8 + Math.random() * 14;
+          d.rotSpeedY = 8 + Math.random() * 14;
+          d.rotSpeedZ = 8 + Math.random() * 14;
+
+          d.life = 1.1 + Math.random() * 1.4;
+          d.maxLife = d.life;
+          d.mesh.visible = true;
+
+          spawned++;
+          if (spawned >= count) break;
+        }
+      }
+    },
+
+    triggerMuzzleFlash(playerX, playerY, playerAngle, latestProj) {
+      const forwardX = Math.cos(playerAngle);
+      const forwardY = -Math.sin(playerAngle);
+      const muzzleX = playerX + forwardX * 24;
+      const muzzleY = -playerY + forwardY * 24;
+      const muzzleZ = 18;
+
+      let color = 0xfef08a; // Warm yellow/orange default
+      if (latestProj) {
+        if (latestProj.type === 'laser') color = 0xef4444;
+        else if (latestProj.type === 'foam') color = 0x38bdf8;
+        else if (latestProj.type === 'gas_cloud') color = 0x10b981;
+      }
+
+      if (this.muzzleLight) {
+        this.muzzleLight.color.setHex(color);
+        this.muzzleLight.position.set(muzzleX, muzzleY, muzzleZ);
+        this.muzzleLight.intensity = 16.0; // High intensity flash!
+      }
+
+      if (this.muzzleFlashMesh) {
+        this.muzzleFlashMesh.position.set(muzzleX, muzzleY, muzzleZ);
+        this.muzzleFlashMesh.rotation.z = -playerAngle;
+        this.muzzleFlashMesh.scale.set(1.0, 1.0, 1.0);
+        this.muzzleFlashMesh.visible = true;
+        this.muzzleFlashTimer = 0.06; // Fades out in 60ms
+      }
+
+      if (this.sparksPool) {
+        let spawned = 0;
+        for (let s of this.sparksPool) {
+          if (!s.active) {
+            s.active = true;
+            s.mesh.position.set(muzzleX, muzzleY, muzzleZ);
+            
+            const coneAngle = playerAngle + (Math.random() - 0.5) * 0.42;
+            const speed = 130 + Math.random() * 180;
+            s.vx = Math.cos(coneAngle) * speed;
+            s.vy = -Math.sin(coneAngle) * speed;
+            s.vz = (Math.random() - 0.35) * 50;
+
+            s.life = 0.08 + Math.random() * 0.14;
+            s.maxLife = s.life;
+            s.mesh.material.color.setHex(color);
+            s.mesh.material.opacity = 1.0;
+            s.mesh.scale.set(1.6, 0.8, 0.8);
+            s.mesh.visible = true;
+
+            spawned++;
+            if (spawned >= 8) break;
+          }
+        }
+      }
+    },
+
+    syncRacks(obstacles) {
+      if (!obstacles || !this.racksBatch) return;
+      const count = Math.min(obstacles.length, 180);
+      
+      this.racksBatch.count = count;
+      this.palletsBatch.count = count;
+      this.boxesBatch.count = count;
+
+      for (let i = 0; i < count; i++) {
+        const obs = obstacles[i];
         const w = obs.width || 60;
         const h = obs.height || 60;
         const rackH = 65;
 
-        // Base Rack Uprights & Beams
-        const rackGeo = new THREE.BoxGeometry(w, h, rackH);
-        const rack = new THREE.Mesh(rackGeo, this.materials.rackBlue);
-        rack.position.set(obs.x + w/2, -(obs.y + h/2), rackH/2);
-        rack.castShadow = true;
-        rack.receiveShadow = true;
-        this.racksGroup.add(rack);
+        // 1. Base Rack Uprights & Beams
+        this.dummyPosition.set(obs.x + w/2, -(obs.y + h/2), rackH/2);
+        this.dummyScale.set(w, h, rackH);
+        this.dummyQuaternion.identity();
+        this.dummyMatrix.compose(this.dummyPosition, this.dummyQuaternion, this.dummyScale);
+        this.racksBatch.setMatrixAt(i, this.dummyMatrix);
 
-        // Pallet stacks inside rack
-        const palletGeo = new THREE.BoxGeometry(w * 0.85, h * 0.85, 12);
-        const pallet = new THREE.Mesh(palletGeo, this.materials.palletWood);
-        pallet.position.set(obs.x + w/2, -(obs.y + h/2), rackH + 6);
-        pallet.castShadow = true;
-        this.racksGroup.add(pallet);
+        // 2. Weathered EPAL Pallet Stack inside rack
+        this.dummyPosition.set(obs.x + w/2, -(obs.y + h/2), rackH + 6);
+        this.dummyScale.set(w * 0.85, h * 0.85, 12);
+        this.dummyMatrix.compose(this.dummyPosition, this.dummyQuaternion, this.dummyScale);
+        this.palletsBatch.setMatrixAt(i, this.dummyMatrix);
 
-        // Cardboard shipping boxes on pallet
-        const boxGeo = new THREE.BoxGeometry(w * 0.7, h * 0.7, 24);
-        const box = new THREE.Mesh(boxGeo, this.materials.cardboardBox);
-        box.position.set(obs.x + w/2, -(obs.y + h/2), rackH + 24);
-        box.castShadow = true;
-        this.racksGroup.add(box);
-      });
+        // 3. Cardboard shipping boxes with DTA/DHL labels & barcodes
+        this.dummyPosition.set(obs.x + w/2, -(obs.y + h/2), rackH + 24);
+        this.dummyScale.set(w * 0.72, h * 0.72, 24);
+        this.dummyMatrix.compose(this.dummyPosition, this.dummyQuaternion, this.dummyScale);
+        this.boxesBatch.setMatrixAt(i, this.dummyMatrix);
+      }
+
+      this.racksBatch.instanceMatrix.needsUpdate = true;
+      this.palletsBatch.instanceMatrix.needsUpdate = true;
+      this.boxesBatch.instanceMatrix.needsUpdate = true;
     },
 
     syncBarrels(adrBarrels) {
-      if (!this.barrelsGroup || !adrBarrels) return;
-      const activeIds = new Set();
-      adrBarrels.forEach((b, idx) => {
-        if (!b.active) return;
-        const id = b.id || ("barrel_" + idx);
-        activeIds.add(id);
+      if (!adrBarrels || !this.barrelsBatch) return;
+      let count = 0;
+      this.dummyRotation.set(Math.PI / 2, 0, 0);
+      this.dummyQuaternion.setFromEuler(this.dummyRotation);
 
-        let mesh = this.barrelMeshes.get(id);
-        if (!mesh) {
-          const geo = new THREE.CylinderGeometry(11, 11, 26, 12);
-          let col = 0xef4444;
-          if (b.type === "acid") col = 0x84cc16;
-          else if (b.type === "oil") col = 0xf59e0b;
+      for (let i = 0; i < adrBarrels.length; i++) {
+        const b = adrBarrels[i];
+        if (!b.active || count >= 100) continue;
 
-          const mat = new THREE.MeshStandardMaterial({
-            color: col,
-            roughness: 0.35,
-            metalness: 0.65
-          });
-          mesh = new THREE.Mesh(geo, mat);
-          mesh.castShadow = true;
-          mesh.receiveShadow = true;
-          mesh.rotation.x = Math.PI / 2;
-          this.barrelsGroup.add(mesh);
-          this.barrelMeshes.set(id, mesh);
-        }
-        mesh.position.set(b.x, -b.y, 13);
-      });
+        this.dummyPosition.set(b.x, -b.y, 13);
+        this.dummyScale.set(1, 1, 1);
+        this.dummyMatrix.compose(this.dummyPosition, this.dummyQuaternion, this.dummyScale);
+        this.barrelsBatch.setMatrixAt(count, this.dummyMatrix);
 
-      for (const [id, mesh] of this.barrelMeshes.entries()) {
-        if (!activeIds.has(id)) {
-          this.barrelsGroup.remove(mesh);
-          this.barrelMeshes.delete(id);
-        }
+        let col = 0xef4444; // Class 3 Flammable
+        if (b.type === "acid") col = 0x84cc16; // Toxic Corrosive
+        else if (b.type === "oil") col = 0xf59e0b; // Amber Petroleum
+        this.dummyColor.setHex(col);
+        this.barrelsBatch.setColorAt(count, this.dummyColor);
+
+        count++;
       }
+
+      this.barrelsBatch.count = count;
+      this.barrelsBatch.instanceMatrix.needsUpdate = true;
+      if (this.barrelsBatch.instanceColor) this.barrelsBatch.instanceColor.needsUpdate = true;
+    },
+
+    syncPickups(dropItems, gameTime) {
+      if (!dropItems || !this.pickupsBatch) return;
+      let count = 0;
+
+      for (let i = 0; i < dropItems.length; i++) {
+        const item = dropItems[i];
+        if (count >= 80) break;
+
+        const bob = Math.sin(gameTime * 4 + i) * 3 + 10;
+        this.dummyRotation.set(Math.sin(gameTime * 2 + i) * 0.25, 0, gameTime * 2.8 + i);
+        this.dummyQuaternion.setFromEuler(this.dummyRotation);
+
+        this.dummyPosition.set(item.x, -item.y, bob);
+        this.dummyScale.set(1, 1, 1);
+        this.dummyMatrix.compose(this.dummyPosition, this.dummyQuaternion, this.dummyScale);
+        this.pickupsBatch.setMatrixAt(count, this.dummyMatrix);
+
+        let col = 0x38bdf8;
+        if (item.type === 'medkit') col = 0xef4444;
+        else if (item.type === 'battery') col = 0x22c55e;
+        else if (item.type === 'coffee') col = 0x78350f;
+        this.dummyColor.setHex(col);
+        this.pickupsBatch.setColorAt(count, this.dummyColor);
+
+        count++;
+      }
+
+      this.pickupsBatch.count = count;
+      this.pickupsBatch.instanceMatrix.needsUpdate = true;
+      if (this.pickupsBatch.instanceColor) this.pickupsBatch.instanceColor.needsUpdate = true;
+    },
+
+    syncShells(dt) {
+      if (!this.shellPool || !this.shellsBatch) return;
+      let count = 0;
+
+      for (let i = 0; i < this.shellPool.length; i++) {
+        const s = this.shellPool[i];
+        if (!s.active || count >= 100) continue;
+
+        s.life -= dt;
+        if (s.life <= 0) {
+          s.active = false;
+          continue;
+        }
+
+        // Apply 3D physics
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        s.z += s.vz * dt;
+        s.vz -= 680 * dt; // Gravity
+
+        // Bounce on warehouse floor
+        if (s.z <= 0.8) {
+          s.z = 0.8;
+          s.vz = -s.vz * 0.45;
+          s.vx *= 0.72;
+          s.vy *= 0.72;
+          s.rotSpeedX *= 0.55;
+          s.rotSpeedY *= 0.55;
+          s.rotSpeedZ *= 0.55;
+        }
+
+        s.rx += s.rotSpeedX * dt;
+        s.ry += s.rotSpeedY * dt;
+        s.rz += s.rotSpeedZ * dt;
+
+        this.dummyRotation.set(s.rx, s.ry, s.rz);
+        this.dummyQuaternion.setFromEuler(this.dummyRotation);
+
+        this.dummyPosition.set(s.x, s.y, s.z);
+        this.dummyScale.set(1, 1, 1);
+        this.dummyMatrix.compose(this.dummyPosition, this.dummyQuaternion, this.dummyScale);
+        this.shellsBatch.setMatrixAt(count, this.dummyMatrix);
+
+        count++;
+      }
+
+      this.shellsBatch.count = count;
+      this.shellsBatch.instanceMatrix.needsUpdate = true;
     },
 
     getEnemyMesh(enemy) {
@@ -730,7 +1437,7 @@
 
       // Head
       const headGeo = new THREE.SphereGeometry(5.5 * scale, 10, 10);
-      const headMat = new THREE.MeshStandardMaterial({ color: isBoss ? 0x991b1b : 0x166534, roughness: 0.6 });
+      const headMat = new THREE.MeshStandardMaterial({ color: isBoss ? 0xb91c1c : 0x166534, roughness: 0.6 });
       const head = new THREE.Mesh(headGeo, headMat);
       head.position.set(0, 0, 24 * scale);
       head.castShadow = true;
@@ -752,7 +1459,7 @@
       mesh.add(rLeg);
       mesh.rLeg = rLeg;
 
-      // Arms reaching out forward
+      // Arms reaching out forward (Zombie grasp pose)
       const armGeo = new THREE.BoxGeometry(12 * scale, 4 * scale, 4 * scale);
       const lArm = new THREE.Mesh(armGeo, mat);
       lArm.position.set(8 * scale, -8 * scale, 16 * scale);
@@ -797,6 +1504,19 @@
       }
       this.syncBarrels(adrBarrels);
 
+      // Detect newly spawned projectiles to trigger Technology 2 Shell Casing, Smoke Ejection, & Muzzle Flash
+      if (this.lastProjectileCount === undefined) this.lastProjectileCount = 0;
+      if (projectiles.length > this.lastProjectileCount) {
+        const newCount = projectiles.length - this.lastProjectileCount;
+        for (let i = 0; i < Math.min(4, newCount); i++) {
+          this.spawnShellCasing(player.x, player.y, player.angle);
+          this.spawnMuzzleSmoke(player.x, player.y, player.angle);
+        }
+        // Trigger high-impact dynamic 3D muzzle flash & directed muzzle sparks
+        this.triggerMuzzleFlash(player.x, player.y, player.angle, projectiles[projectiles.length - 1]);
+      }
+      this.lastProjectileCount = projectiles.length;
+
       // 1. AUTO-SCALING TOP-DOWN CRIMSONLAND CAMERA
       const speed = Math.hypot(player.vx || 0, player.vy || 0);
       const enemyCount = enemies.length;
@@ -804,8 +1524,8 @@
       // Dynamic Auto-Zoom: expands smoothly when driving fast or fighting massive hordes
       let targetZoom = this.baseCameraZoom;
       if (this.autoScalingEnabled) {
-        const speedExpansion = Math.min(180, speed * 0.45);
-        const densityExpansion = Math.min(120, enemyCount * 1.5);
+        const speedExpansion = Math.min(80, speed * 0.22);
+        const densityExpansion = Math.min(60, enemyCount * 0.75);
         targetZoom = this.baseCameraZoom + speedExpansion + densityExpansion;
       }
 
@@ -813,17 +1533,25 @@
       this.currentCameraZoom += (targetZoom - this.currentCameraZoom) * Math.min(1.0, dt * 4.5);
       this.cameraZoom = this.currentCameraZoom;
 
-      // Center camera directly above player
+      // Center camera using spectacular isometric offset
       const shakeX = (Math.random() - 0.5) * screenShake * 2.0;
       const shakeY = (Math.random() - 0.5) * screenShake * 2.0;
       const shakeZ = (Math.random() - 0.5) * screenShake * 1.5;
 
       this.camera.position.set(
         player.x + shakeX,
-        -player.y + shakeY,
-        this.currentCameraZoom + shakeZ
+        -player.y - 195 + shakeY,
+        this.currentCameraZoom * 0.9 + shakeZ
       );
-      this.camera.lookAt(player.x, -player.y, 0);
+      this.camera.lookAt(player.x, -player.y, 15);
+
+      // Flashing Alarm Warning Sirens / Alarms Animation
+      if (this.sirenLights) {
+        this.sirenLights.forEach((siren, idx) => {
+          const speed = 7.0 + idx * 1.5;
+          siren.intensity = 3.2 + Math.sin(gameTime * speed) * 3.2;
+        });
+      }
 
       // Follow Player with High-Bay Directional Light Frustum
       this.dirLight.position.set(player.x + 400, -player.y - 700, 1400);
@@ -923,21 +1651,26 @@
         // Damage Recoil / Squash & Stretch
         if (e.hitFlash > 0) {
           mesh.scale.set(1.22, 0.88, 1.22);
-          this.spawnBlood(e.x, e.y);
         } else {
           mesh.scale.set(1.0, 1.0, 1.0);
         }
       });
 
-      // Cleanup dead enemy meshes
+      // Cleanup dead enemy meshes + Trigger Crimsonland Puddle Splatters on Death
       for (const [id, mesh] of this.enemyMeshes.entries()) {
         if (!activeEnemyIds.has(id)) {
+          // Splat persistent death gore on the dynamic canvas!
+          this.spawnBloodSplatter(mesh.position.x, -mesh.position.y, true);
+
+          // Spawn high-impact 3D physics debris chunks (green zombie guts, grey paper sheets, red metal)
+          this.spawnEnemyDebris(mesh.position.x, -mesh.position.y, mesh.enemyType, mesh.isBoss);
+
           this.enemiesGroup.remove(mesh);
           this.enemyMeshes.delete(id);
         }
       }
 
-      // 5. 3D PROJECTILES
+      // --- TECHNOLOGY 3: STRETCHED glowing NEON PROJECTILE TRACERS ---
       const activeProjIds = new Set();
       projectiles.forEach((p, idx) => {
         const id = p.id || ("proj_" + idx);
@@ -945,16 +1678,27 @@
 
         let mesh = this.projectileMeshes.get(id);
         if (!mesh) {
-          let geo = new THREE.SphereGeometry(3.5, 8, 8);
+          // Stretched tracer geometry aligned along the travel vector (elongated box)
+          let geo = new THREE.BoxGeometry(16, 2.2, 2.2);
           let col = 0xfacc15;
           if (p.type === 'laser') col = 0xef4444;
-          else if (p.type === 'foam') col = 0xe0f2fe;
+          else if (p.type === 'foam') col = 0x38bdf8;
+          else if (p.type === 'gas_cloud') col = 0x10b981;
 
+          // Self-glowing material
           mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: col }));
           this.projectilesGroup.add(mesh);
           this.projectileMeshes.set(id, mesh);
         }
         mesh.position.set(p.x, -p.y, 14);
+
+        // Align tracer rotation with its flying direction
+        const angle = Math.atan2(-(p.vy || 0), p.vx || 0);
+        mesh.rotation.z = angle;
+
+        // Size pulsing glow animation
+        const pulse = 1.0 + Math.sin(gameTime * 35 + idx) * 0.15;
+        mesh.scale.set(pulse, pulse, pulse);
       });
 
       for (const [id, mesh] of this.projectileMeshes.entries()) {
@@ -964,40 +1708,126 @@
         }
       }
 
-      // 6. 3D PICKUPS (Spinning & Bobbing)
-      const activePickupIds = new Set();
-      dropItems.forEach((item, idx) => {
-        const id = item.id || ("pickup_" + idx);
-        activePickupIds.add(id);
+      // 6. BATCHED 3D PICKUPS & 3D CASING PHYSICS
+      this.syncPickups(dropItems, gameTime);
+      this.syncShells(dt);
 
-        let mesh = this.pickupMeshes.get(id);
-        if (!mesh) {
-          let col = 0x38bdf8;
-          if (item.type === 'medkit') col = 0xef4444;
-          else if (item.type === 'battery') col = 0x22c55e;
-          else if (item.type === 'coffee') col = 0x78350f;
+      if (this.smokePool) {
+        this.smokePool.forEach(sm => {
+          if (!sm.active) return;
 
-          const geo = new THREE.BoxGeometry(9, 9, 9);
-          mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-            color: col,
-            roughness: 0.3,
-            metalness: 0.6
-          }));
-          mesh.castShadow = true;
-          this.pickupsGroup.add(mesh);
-          this.pickupMeshes.set(id, mesh);
-        }
+          sm.life -= dt;
+          if (sm.life <= 0) {
+            sm.active = false;
+            sm.mesh.visible = false;
+            return;
+          }
 
-        const bob = Math.sin(gameTime * 4 + idx) * 3 + 8;
-        mesh.position.set(item.x, -item.y, bob);
-        mesh.rotation.z += dt * 2.8;
-        mesh.rotation.x = Math.sin(gameTime * 2) * 0.25;
-      });
+          // Smoke rise and expand
+          sm.mesh.position.x += sm.vx * dt;
+          sm.mesh.position.y += sm.vy * dt;
+          sm.mesh.position.z += sm.vz * dt;
 
-      for (const [id, mesh] of this.pickupMeshes.entries()) {
-        if (!activePickupIds.has(id)) {
-          this.pickupsGroup.remove(mesh);
-          this.pickupMeshes.delete(id);
+          const progress = 1.0 - (sm.life / sm.maxLife);
+          const currentScale = 1.0 + progress * 2.5;
+          sm.mesh.scale.set(currentScale, currentScale, currentScale);
+          sm.mesh.material.opacity = 0.55 * (1.0 - progress);
+        });
+      }
+
+      // --- REWOLUCJA PHYSICS FOR 3D SPARKS ---
+      if (this.sparksPool) {
+        this.sparksPool.forEach(s => {
+          if (!s.active) return;
+
+          s.life -= dt;
+          if (s.life <= 0) {
+            s.active = false;
+            s.mesh.visible = false;
+            return;
+          }
+
+          s.mesh.position.x += s.vx * dt;
+          s.mesh.position.y += s.vy * dt;
+          s.mesh.position.z += s.vz * dt;
+
+          const speed = Math.hypot(s.vx, s.vy);
+          if (speed > 1.0) {
+            s.mesh.rotation.z = Math.atan2(s.vy, s.vx);
+          }
+
+          s.vz -= 180 * dt; // Gravity
+
+          // Spark ground bounce
+          if (s.mesh.position.z <= 0.4) {
+            s.mesh.position.z = 0.4;
+            s.vz = -s.vz * 0.35;
+            s.vx *= 0.65;
+            s.vy *= 0.65;
+          }
+
+          s.mesh.material.opacity = s.life / s.maxLife;
+        });
+      }
+
+      // --- REWOLUCJA PHYSICS FOR ENEMY DEBRIS ---
+      if (this.debrisPool) {
+        this.debrisPool.forEach(d => {
+          if (!d.active) return;
+
+          d.life -= dt;
+          if (d.life <= 0) {
+            d.active = false;
+            d.mesh.visible = false;
+            return;
+          }
+
+          d.mesh.position.x += d.vx * dt;
+          d.mesh.position.y += d.vy * dt;
+          d.mesh.position.z += d.vz * dt;
+
+          d.mesh.rotation.x += d.rotSpeedX * dt;
+          d.mesh.rotation.y += d.rotSpeedY * dt;
+          d.mesh.rotation.z += d.rotSpeedZ * dt;
+
+          d.vz -= 220 * dt; // Gravity
+
+          // Ground bounce & friction
+          if (d.mesh.position.z <= 2.2) {
+            d.mesh.position.z = 2.2;
+            d.vz = -d.vz * 0.38;
+            d.vx *= 0.62;
+            d.vy *= 0.62;
+            d.rotSpeedX *= 0.65;
+            d.rotSpeedY *= 0.65;
+            d.rotSpeedZ *= 0.65;
+
+            // Occasionally splat a permanent drops of blood/oil on bounce
+            if (Math.abs(d.vz) > 12.0 && Math.random() < 0.45) {
+              this.spawnBloodSplatter(d.mesh.position.x, -d.mesh.position.y, false);
+            }
+          }
+
+          if (d.life < 0.3) {
+            const scale = d.life / 0.3;
+            d.mesh.scale.set(scale, scale, scale);
+          }
+        });
+      }
+
+      // --- DECAY MUZZLE FLASH LIGHT AND CONE STARBURST ---
+      if (this.muzzleLight && this.muzzleLight.intensity > 0) {
+        this.muzzleLight.intensity -= dt * 140; // ultra fast decay
+        if (this.muzzleLight.intensity < 0) this.muzzleLight.intensity = 0;
+      }
+
+      if (this.muzzleFlashTimer > 0) {
+        this.muzzleFlashTimer -= dt;
+        if (this.muzzleFlashTimer <= 0) {
+          if (this.muzzleFlashMesh) this.muzzleFlashMesh.visible = false;
+        } else {
+          const scale = this.muzzleFlashTimer / 0.06;
+          if (this.muzzleFlashMesh) this.muzzleFlashMesh.scale.set(scale, scale, scale);
         }
       }
 

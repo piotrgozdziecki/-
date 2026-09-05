@@ -98,90 +98,244 @@
     }
     .xp-bar-container {
       position: absolute;
-      top: max(env(safe-area-inset-top, 8px), 8px);
+      top: max(env(safe-area-inset-top, 6px), 6px);
       left: max(env(safe-area-inset-left, 10px), 10px);
       right: max(env(safe-area-inset-right, 10px), 10px);
-      height: clamp(10px, 1.6vh, 14px);
-      background: rgba(3, 7, 18, 0.95);
-      border: 1.5px solid #38bdf8;
-      border-radius: 8px;
+      height: 8px;
+      background: rgba(3, 7, 18, 0.92);
+      border: 1px solid #0284c7;
+      border-radius: 4px;
       overflow: hidden;
-      box-shadow: 0 0 20px rgba(56, 189, 248, 0.6), inset 0 1px 4px rgba(0,0,0,0.9);
+      box-shadow: 0 0 14px rgba(2, 132, 199, 0.4), inset 0 1px 3px rgba(0,0,0,0.8);
+      z-index: 25;
     }
-
 
     .xp-bar-fill {
       height: 100%;
       width: 0%;
-      background: linear-gradient(90deg, #0284c7, #38bdf8 65%, #e0f2fe);
-      box-shadow: 0 0 12px #38bdf8, 0 0 4px #bae6fd;
+      background: linear-gradient(90deg, #0284c7, #38bdf8 70%, #f0fdf4);
+      box-shadow: 0 0 10px #38bdf8;
       transition: width 0.08s linear;
     }
+
     .hud-top-bar {
       position: absolute;
-      top: max(env(safe-area-inset-top, 8px), 8px);
-      left: max(env(safe-area-inset-left, 8px), 8px);
-      right: max(env(safe-area-inset-right, 8px), 8px);
+      top: max(env(safe-area-inset-top, 18px), 18px);
+      left: max(env(safe-area-inset-left, 10px), 10px);
+      right: max(env(safe-area-inset-right, 10px), 10px);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .industrial-hud-grid {
+      display: flex;
+      justify-content: space-between;
+      align-items: stretch;
+      gap: 10px;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .hud-card {
+      background: rgba(10, 16, 26, 0.96);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 2px; /* sharp crisp logistics industrial design */
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(56, 189, 248, 0.05);
+      font-family: "JetBrains Mono", "Courier New", Courier, monospace;
+      letter-spacing: 0.5px;
+      pointer-events: auto;
+      text-transform: uppercase;
+      font-size: 10.5px;
+    }
+
+    /* Battery / Power Core Module */
+    .hud-battery-card {
+      border-left: 3px solid #22c55e;
+      border-color: rgba(34, 197, 94, 0.3);
+      min-width: 160px;
+    }
+    .hud-battery-card.low {
+      border-left: 3px solid #ef4444;
+      border-color: rgba(239, 68, 68, 0.6);
+      background: linear-gradient(90deg, rgba(127, 29, 29, 0.25), rgba(10, 16, 26, 0.98));
+      animation: pulseAlert 0.4s infinite alternate;
+    }
+    .battery-meter-container {
       display: flex;
       flex-direction: column;
       gap: 4px;
-      pointer-events: none;
+      width: 100%;
     }
-    .status-panel {
-      margin-top: 14px;
+    .battery-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      font-size: 9px;
+      font-weight: 800;
+      color: #94a3b8;
+      letter-spacing: 1px;
+    }
+    .battery-bar-track {
+      width: 100px;
+      height: 8px;
+      background: rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 1px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+    }
+    .battery-bar-fill {
+      height: 100%;
+      width: 100%;
+      background: #22c55e;
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+      transition: width 0.12s ease-out, background 0.2s ease;
+    }
+    .battery-bar-fill.warning {
+      background: #f59e0b;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+    }
+    .battery-bar-fill.critical {
+      background: #ef4444;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.75);
+    }
+
+    /* Horde Proximity & Threat Radar Module */
+    .hud-threat-card {
+      border-left: 3px solid #06b6d4;
+      border-color: rgba(6, 182, 212, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 190px;
+    }
+    .hud-threat-card.warning {
+      border-left: 3px solid #f59e0b;
+      border-color: rgba(245, 158, 11, 0.5);
+    }
+    .hud-threat-card.critical {
+      border-left: 3px solid #ef4444;
+      border-color: rgba(239, 68, 68, 0.6);
+      background: linear-gradient(90deg, rgba(127, 29, 29, 0.2), rgba(10, 16, 26, 0.96));
+      animation: hazardStripePulse 1.5s infinite linear;
+    }
+    @keyframes hazardStripePulse {
+      0% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.1); }
+      50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
+      100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.1); }
+    }
+    .threat-radar-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #06b6d4;
+      box-shadow: 0 0 10px #06b6d4;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .threat-radar-indicator::after {
+      content: '';
+      position: absolute;
+      top: -4px; left: -4px; right: -4px; bottom: -4px;
+      border-radius: 50%;
+      border: 1px solid currentColor;
+      opacity: 0.8;
+      animation: sonarPulse 1.5s infinite ease-out;
+    }
+    @keyframes sonarPulse {
+      0% { transform: scale(0.6); opacity: 1; }
+      100% { transform: scale(2.4); opacity: 0; }
+    }
+    .threat-radar-indicator.warning {
+      background: #f59e0b;
+      box-shadow: 0 0 12px #f59e0b;
+      color: #f59e0b;
+    }
+    .threat-radar-indicator.critical {
+      background: #ef4444;
+      box-shadow: 0 0 16px #ef4444;
+      color: #ef4444;
+      animation: pulseAlert 0.3s infinite alternate;
+    }
+    .threat-text-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
       width: 100%;
     }
-    .status-panel-group {
-      display: flex;
-      gap: 5px;
-      align-items: center;
+    .threat-title {
+      font-size: 8px;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 1.2px;
     }
+    .threat-status-label {
+      font-size: 10.5px;
+      font-weight: 900;
+      color: #22d3ee;
+    }
+    .threat-status-label.warning { color: #fbbf24; }
+    .threat-status-label.critical { color: #f87171; }
+
+    /* Tactical Stats Badges */
     .stat-badge {
-      background: rgba(8, 15, 30, 0.90);
-      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      background: rgba(10, 16, 26, 0.96);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      padding: 4px 8px;
-      border-radius: 8px;
-      font-size: 11.5px;
-      font-weight: 900;
+      padding: 6px 10px;
+      border-radius: 2px;
+      font-size: 10.5px;
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 4px;
-      letter-spacing: 0.3px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
-      text-shadow: 0 1px 2px rgba(0,0,0,0.9);
+      gap: 6px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
       white-space: nowrap;
+      color: #cbd5e1;
+      text-transform: uppercase;
     }
+    .stat-badge-btn {
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+      min-height: 28px;
+    }
+    .stat-badge-btn:hover {
+      background: rgba(30, 41, 59, 0.98);
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+    .stat-badge-btn:active {
+      transform: scale(0.96);
+    }
+
+    .badge-clock { border-color: rgba(245, 158, 11, 0.3); color: #fbbf24; }
+    .badge-combo { border-color: rgba(236, 72, 153, 0.3); color: #f472b6; }
+    .badge-combo.turbo { border-color: #f59e0b; color: #fbbf24; animation: pulseTurbo 0.6s infinite alternate; }
+    .badge-combo.hyper { border-color: #38bdf8; color: #7dd3fc; animation: pulseHyper 0.35s infinite alternate; }
+    .badge-lvl { border-color: rgba(168, 85, 247, 0.3); color: #c084fc; }
+
     @media (max-width: 640px) {
       .badge-char { display: none !important; }
       #badge-zoom { display: none !important; }
-      .stat-badge {
-        font-size: 10px !important;
-        padding: 3px 6px !important;
-      }
+      .hud-threat-card { min-width: 120px; padding: 4px 6px; }
+      .hud-battery-card { min-width: 115px; padding: 4px 6px; }
+      .battery-bar-track { width: 52px; }
+      .stat-badge { font-size: 10px !important; padding: 3px 5px !important; }
     }
-    .badge-battery { border-color: #22c55e; color: #4ade80; text-shadow: 0 0 10px rgba(74, 222, 128, 0.7); }
-    .badge-battery.low { border-color: #ef4444; color: #f87171; animation: pulseAlert 0.5s infinite alternate; }
-    .badge-clock { border-color: #f59e0b; color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.6); }
-    .badge-combo { border-color: #ec4899; color: #f472b6; font-size: 11.5px; font-weight: 900; text-shadow: 0 0 12px rgba(236, 72, 153, 0.9); transition: all 0.2s ease; }
-    .badge-combo.turbo {
-      border-color: #f59e0b;
-      color: #fbbf24;
-      text-shadow: 0 0 14px rgba(245, 158, 11, 0.9);
-      animation: pulseTurbo 0.6s infinite alternate;
-    }
-    .badge-combo.hyper {
-      border-color: #38bdf8;
-      color: #7dd3fc;
-      text-shadow: 0 0 18px rgba(56, 189, 248, 1.0);
-      animation: pulseHyper 0.35s infinite alternate;
-    }
-    .badge-lvl { border-color: #a855f7; color: #c084fc; text-shadow: 0 0 10px rgba(168, 85, 247, 0.6); }
-    .badge-char { border-color: #38bdf8; color: #7dd3fc; text-shadow: 0 0 10px rgba(56, 189, 248, 0.6); }
 
     @keyframes pulseTurbo {
       from { transform: scale(1); box-shadow: 0 0 8px rgba(245, 158, 11, 0.5); }
@@ -554,8 +708,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(9, 11, 16, 0.94);
-      /* backdrop-filter: blur(8px); */
+      background: radial-gradient(circle at center, rgba(17, 24, 39, 0.98) 0%, rgba(3, 7, 18, 1.0) 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -567,6 +720,40 @@
       overflow-x: hidden;
       touch-action: pan-y;
       -webkit-overflow-scrolling: touch;
+    }
+    .screen-overlay::before {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.28) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
+      z-index: 200;
+      background-size: 100% 4px, 3px 100%;
+      pointer-events: none;
+    }
+    .screen-overlay::after {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: rgba(18, 16, 16, 0.12);
+      opacity: 0;
+      z-index: 200;
+      pointer-events: none;
+      animation: crtFlicker 0.18s infinite;
+    }
+    @keyframes crtFlicker {
+      0% { opacity: 0.22; }
+      10% { opacity: 0.31; }
+      20% { opacity: 0.18; }
+      30% { opacity: 0.25; }
+      40% { opacity: 0.19; }
+      50% { opacity: 0.28; }
+      60% { opacity: 0.21; }
+      70% { opacity: 0.33; }
+      80% { opacity: 0.23; }
+      90% { opacity: 0.30; }
+      100% { opacity: 0.25; }
     }
     .card-modal {
       max-width: 620px;
@@ -1495,52 +1682,58 @@
   </div>
 
   <div id="hud">
-    <div id="fps-detail-card" style="display: none; position: absolute; top: 52px; right: 12px; background: rgba(15, 23, 42, 0.94); border: 1px solid #334155; backdrop-filter: blur(8px); border-radius: 8px; padding: 10px 14px; color: #cbd5e1; font-family: monospace; font-size: 11px; z-index: 1000; pointer-events: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.6); min-width: 210px;">
-      <div style="font-weight: bold; color: #38bdf8; margin-bottom: 6px; border-bottom: 1px solid #334155; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
-        <span>⚡ ENGINE DEBUGGER</span>
-        <span onclick="toggleFpsDetails()" style="cursor: pointer; color: #94a3b8; font-size: 12px; padding: 2px 4px;">✖</span>
-      </div>
-      <div style="margin-bottom: 3px;">Płynność: <span id="fps-val" style="color:#22c55e; font-weight:bold;">60 FPS</span> (<span id="ms-val">16.6ms</span>)</div>
-      <div style="margin-bottom: 3px;">Wrogowie: <span id="fps-enemies" style="color:#fef08a; font-weight:bold;">0</span></div>
-      <div style="margin-bottom: 3px;">Pociski: <span id="fps-projectiles" style="color:#7dd3fc; font-weight:bold;">0</span></div>
-      <div style="margin-bottom: 3px;">Przedmioty / ADR: <span id="fps-items" style="color:#f472b6; font-weight:bold;">0</span></div>
-      <div style="margin-bottom: 3px;">Obiekty 3D Łącznie: <span id="fps-total-ents" style="color:#e2e8f0; font-weight:bold;">0</span></div>
-      <div style="margin-top: 6px; padding-top: 4px; border-top: 1px dashed #334155; color: #94a3b8; font-size: 10px;">
-        Silnik: <span style="color:#a7f3d0;">Three.js PBR WebGL</span><br>
-        Auto-FOV: <span style="color:#fde047;">Aktywne</span>
-      </div>
-    </div>
+    <!-- Precision XP & Level Bar -->
     <div class="xp-bar-container">
       <div id="xp-fill" class="xp-bar-fill"></div>
     </div>
   
     <div class="hud-top-bar">
-      <div class="status-panel">
-        <!-- Left: Character, Level, Sector & Clock, Kills -->
-        <div class="status-panel-group">
-          <div id="badge-char" class="stat-badge badge-char">🚜 Piotr</div>
-          <div id="badge-lvl" class="stat-badge badge-lvl">⭐ LVL 1</div>
-          <div id="badge-sector" class="stat-badge" style="border-color: #f59e0b; color: #fef08a; font-weight: 900;">📍 S1 | ⏰ 02:00</div>
-          <div id="badge-clock" class="stat-badge badge-clock">🕒 03:15</div>
-          <div id="badge-kills" class="stat-badge" style="border-color: #ef4444; color: #fca5a5;">💀 0</div>
+      <div class="industrial-hud-grid">
+        <!-- Module 1: BT Reflex 48V Vehicle Battery Telemetry -->
+        <div id="hud-battery-panel" class="hud-card hud-battery-card" title="Telemetria zasilania wózka Toyota BT Reflex">
+          <span style="font-size: 15px;">🚜</span>
+          <div class="battery-meter-container">
+            <div class="battery-header">
+              <span>BT 48V BATERIA</span>
+              <span id="badge-battery-val" style="font-family: monospace; font-weight: 900; color: #4ade80;">100%</span>
+            </div>
+            <div class="battery-bar-track">
+              <div id="battery-bar-fill" class="battery-bar-fill"></div>
+            </div>
+          </div>
         </div>
-        <!-- Right: Battery, Combo, Zoom, Pause button -->
-        <div class="status-panel-group" style="pointer-events: auto;">
-          <div id="badge-battery" class="stat-badge badge-battery">⚡ 100%</div>
-          <div id="badge-combo" class="stat-badge badge-combo">🔥 COMBO x1</div>
-          <div id="badge-fps" class="stat-badge" onclick="toggleFpsDetails()" style="border-color: #22c55e; color: #86efac; font-weight: 700; cursor: pointer;" title="Kliknij, aby otworzyć szczegóły wydajności">⚡ 60 FPS | 👥 0 ENTS</div>
-          <div id="badge-zoom" class="stat-badge" onclick="toggleZoom()" style="border-color: #38bdf8; color: #7dd3fc; cursor: pointer;">🔍 <span id="badge-zoom-label">0.50x</span></div>
-          <div id="badge-pause" class="stat-badge" onclick="togglePause()" style="border-color: #a855f7; color: #e9d5ff; font-weight: 900; cursor: pointer;">⏸️ PAUZA</div>
+
+        <!-- Module 2: Horde Proximity & Threat Radar Alert -->
+        <div id="hud-threat-panel" class="hud-card hud-threat-card" title="Radar zbliżeniowy zagrożenia hordą w promieniu hali">
+          <div id="threat-indicator-dot" class="threat-radar-indicator"></div>
+          <div class="threat-text-group">
+            <div class="threat-title">RADAR ZAGROŻENIA</div>
+            <div id="threat-status-text" class="threat-status-label">PERYMETR CZYSTY</div>
+          </div>
+        </div>
+
+        <!-- Module 3: Logistics Shift, Sector & Kills -->
+        <div class="hud-card" style="border-color: rgba(56, 189, 248, 0.35); gap: 6px;">
+          <div id="badge-lvl" class="stat-badge badge-lvl" style="padding: 2px 6px;">LVL 1</div>
+          <div id="badge-sector" class="stat-badge" style="border-color: #f59e0b; color: #fef08a; padding: 2px 6px;">ZONE: S1</div>
+          <div id="badge-clock" class="stat-badge badge-clock" style="padding: 2px 6px;">TIME: 03:15</div>
+          <div id="badge-kills" class="stat-badge" style="border-color: #ef4444; color: #fca5a5; padding: 2px 6px;">DISP: 0</div>
+        </div>
+
+        <!-- Module 4: Logistics Combo Multiplier & Quick Actions -->
+        <div style="display: flex; gap: 5px; align-items: center; pointer-events: auto;">
+          <div id="badge-combo" class="stat-badge badge-combo">COMBO x1</div>
+          <div id="badge-zoom" class="stat-badge stat-badge-btn" onclick="toggleZoom()" style="border-color: #38bdf8; color: #7dd3fc;" title="Zmień kąt/oddalenie kamery">CAM: <span id="badge-zoom-label">0.50x</span></div>
+          <div id="badge-fps" class="stat-badge stat-badge-btn" onclick="toggleFpsDetails()" style="border-color: #22c55e; color: #86efac;" title="Szczegóły silnika 3D">FR: 60 FPS</div>
+          <div id="badge-pause" class="stat-badge stat-badge-btn" onclick="togglePause()" style="border-color: #a855f7; color: #e9d5ff; font-weight: 900;" title="Pauza / Ekwipunek">[PAUSE]</div>
         </div>
       </div>
     </div>
 
-    <!-- Active Weapons list -->
+    <!-- Active Weapons & Equipment Deck -->
     <div id="weapons-hud" class="weapons-hud"></div>
-        <div style="display: flex; gap: 6px; align-items: center;">
-          <button id="hud-pause-btn" class="hud-btn-pause" onclick="togglePause()" testTag="btn_pause" title="Pauza / Opcje">⏸️</button>
-        </div>
 
+    <!-- Boss Health Bar -->
     <div id="boss-hp-container">
       <div id="boss-name" class="boss-name-label">ALARM: ZASTĘPCA GRZESIEK</div>
       <div class="boss-hp-track">
@@ -1955,8 +2148,8 @@
         <div class="option-row">
           <label>🔍 Widok Kamery (Klaustrofobia):</label>
           <div class="slider-wrapper">
-            <input type="range" min="500" max="1200" value="850" id="opt-zoom-slider" oninput="updateCameraZoomSetting(this.value)">
-            <span id="lbl-zoom-vol">850px</span>
+            <input type="range" min="180" max="750" value="320" id="opt-zoom-slider" oninput="updateCameraZoomSetting(this.value)">
+            <span id="lbl-zoom-vol">320px</span>
           </div>
         </div>
         <div class="option-row">
@@ -3325,11 +3518,18 @@ function spawnParticle(x, y, vx, vy, life, size, color) {
 function createSparks(x, y, count, color = '#f59e0b') {
   if (window.Engine3D && window.Engine3D.active && window.Engine3D.spawnSparks) {
     let colHex = 0xf59e0b;
-    if (color === '#ef4444') colHex = 0xef4444;
-    else if (color === '#38bdf8') colHex = 0x38bdf8;
-    else if (color === '#4ade80') colHex = 0x4ade80;
-    else if (color === '#ec4899') colHex = 0xec4899;
-    window.Engine3D.spawnSparks(x, y, 14, Math.min(count * 2, 24), colHex);
+    try {
+      if (color.startsWith('#')) {
+        colHex = parseInt(color.substring(1), 16);
+      } else if (color.startsWith('0x')) {
+        colHex = parseInt(color.substring(2), 16);
+      } else {
+        colHex = parseInt(color, 16) || 0xf59e0b;
+      }
+    } catch (e) {
+      colHex = 0xf59e0b;
+    }
+    window.Engine3D.spawnSparks(x, y, 14, Math.min(count * 2, 48), colHex);
   }
   for (let i = 0; i < count; i++) {
     const a = Math.random() * Math.PI * 2;
@@ -6767,6 +6967,12 @@ function damageEnemy(e, amount) {
   e.hitFlash = 0.12;
   spawnDamageNumber(e.x, e.y, dmg, isCrit);
   
+  // Apply physics-based knockback on weapon hit
+  const angleToPlayer = Math.atan2(e.y - player.y, e.x - player.x);
+  const kbForce = isCrit ? 16 : 8;
+  e.x += Math.cos(angleToPlayer) * kbForce;
+  e.y += Math.sin(angleToPlayer) * kbForce;
+  
   // Blood splatter on hit
   const hitParticles = isCrit ? 6 : 2;
   for (let i = 0; i < hitParticles; i++) {
@@ -7603,7 +7809,7 @@ function update(dt) {
   }
   const sectorBadge = document.getElementById('badge-sector');
   if (sectorBadge) {
-    sectorBadge.innerText = `📍 SEKTOR ${curSec.id} | ⏰ BOSS: ${bossCountdownStr}`;
+    sectorBadge.innerText = `ZONE: S${curSec.id} | SHIFT_ALARM: ${bossCountdownStr}`;
     sectorBadge.style.borderColor = curSec.hazardColor;
   }
 
@@ -7777,7 +7983,7 @@ const angularDiff = Math.abs(diff);
 player.x += player.vx * dt;
   player.y += player.vy * dt;
 
-  // Obstacle collisions (Racks, Pallets, ToiToi)
+  // Obstacle collisions (Racks, Pallets, ToiToi) with Vector Projection Sliding Response
   for (let i = 0; i < obstacles.length; i++) {
     const o = obstacles[i];
     // Simple AABB vs Circle collision
@@ -7793,9 +7999,14 @@ player.x += player.vx * dt;
       const overlap = player.radius - distance;
       const speed = Math.hypot(player.vx, player.vy);
       
+      let nx = 0;
+      let ny = 0;
+      
       if (distance > 0.01) {
-        player.x += (distX / distance) * overlap;
-        player.y += (distY / distance) * overlap;
+        nx = distX / distance;
+        ny = distY / distance;
+        player.x += nx * overlap;
+        player.y += ny * overlap;
       } else {
         const ox = o.x + o.w / 2;
         const oy = o.y + o.h / 2;
@@ -7803,8 +8014,10 @@ player.x += player.vx * dt;
         const pdy = player.y - oy;
         const pdist = Math.hypot(pdx, pdy);
         if (pdist > 0.01) {
-          player.x += (pdx / pdist) * overlap;
-          player.y += (pdy / pdist) * overlap;
+          nx = pdx / pdist;
+          ny = pdy / pdist;
+          player.x += nx * overlap;
+          player.y += ny * overlap;
         } else {
           player.x -= player.vx * dt;
           player.y -= player.vy * dt;
@@ -7814,12 +8027,21 @@ player.x += player.vx * dt;
       // Spawn sparks if hit hard enough
       if (speed > 150) {
          createSparks(testX, testY, Math.floor(speed / 30), '#fbbf24');
-         if (speed > 300) screenShake = Math.max(screenShake, 3);
+         if (speed > 300) screenShake = Math.max(screenShake, 3.5);
       }
       
-      // Kill momentum towards wall
-      player.vx *= 0.5;
-      player.vy *= 0.5;
+      // Vector Projection Sliding: Project velocity onto obstacle surface (tangent of normal)
+      if (nx !== 0 || ny !== 0) {
+        const dot = player.vx * nx + player.vy * ny;
+        if (dot < 0) {
+          // Slide along surface without losing full speed
+          player.vx -= nx * dot;
+          player.vy -= ny * dot;
+        }
+      } else {
+        player.vx *= 0.5;
+        player.vy *= 0.5;
+      }
     }
   }
 
@@ -8155,8 +8377,28 @@ player.x += player.vx * dt;
     if (dist < player.radius + e.info.radius) {
       if (player.isDashing || weapons.pallets.isEvo) {
         damageEnemy(e, weapons.pallets.isEvo ? 80 : 140);
-        createSparks(e.x, e.y, 10, '#f97316');
+        createSparks(e.x, e.y, 12, '#f97316');
         if (weapons.pallets.isEvo && !e.isBoss) e.dead = true; // Auto kill small enemies when evo
+        
+        // Push enemy back with massive force
+        const kbx = (dx / (dist || 1)) * -240;
+        const kby = (dy / (dist || 1)) * -240;
+        e.x += kbx * dt;
+        e.y += kby * dt;
+      } else if (player.isForklift && Math.hypot(player.vx, player.vy) > 100) {
+        const speed = Math.hypot(player.vx, player.vy);
+        const ramDamage = Math.floor(speed * 0.45);
+        damageEnemy(e, ramDamage);
+        
+        // Push enemy back (massive forklift impact knockback)
+        const kbx = (dx / (dist || 1)) * -200;
+        const kby = (dy / (dist || 1)) * -200;
+        e.x += kbx * dt;
+        e.y += kby * dt;
+        
+        createSparks(e.x, e.y, 18, '#fbbf24');
+        sounds.hit();
+        screenShake = Math.max(screenShake, 5);
       } else if (player.invulnTimer <= 0) {
         if (player.dodgeChance && Math.random() < player.dodgeChance) {
           spawnDamageText(player.x, player.y - 20, 'UNIK!', '#a855f7', true);
@@ -8655,24 +8897,92 @@ player.x += player.vx * dt;
       if (totElem) totElem.innerText = totalEnts;
     }
   }
-  document.getElementById('badge-battery').innerText = `⚡ ${Math.ceil((player.battery / player.maxBattery) * 100)}%`;
-  document.getElementById('badge-battery').className = 'stat-badge badge-battery' + (player.battery < 20 ? ' low' : '');
-  document.getElementById('badge-clock').innerText = `🕒 ${timeStr}`;
 
+  // 1. Vehicle Battery Telemetry Update
+  const batteryPct = Math.max(0, Math.min(100, Math.ceil((player.battery / player.maxBattery) * 100)));
+  const batteryValElem = document.getElementById('badge-battery-val');
+  const batteryFillElem = document.getElementById('battery-bar-fill');
+  const batteryPanel = document.getElementById('hud-battery-panel');
+  
+  if (batteryValElem) {
+    batteryValElem.innerText = `${batteryPct}%`;
+    if (batteryPct < 20) {
+      batteryValElem.style.color = '#f87171';
+    } else if (batteryPct < 50) {
+      batteryValElem.style.color = '#fde047';
+    } else {
+      batteryValElem.style.color = '#4ade80';
+    }
+  }
+  if (batteryFillElem) {
+    batteryFillElem.style.width = `${batteryPct}%`;
+    batteryFillElem.className = 'battery-bar-fill' + (batteryPct < 20 ? ' critical' : (batteryPct < 50 ? ' warning' : ''));
+  }
+  if (batteryPanel) {
+    if (batteryPct < 20) {
+      batteryPanel.classList.add('low');
+    } else {
+      batteryPanel.classList.remove('low');
+    }
+  }
+
+  // 2. Horde Proximity & Threat Radar Calculation
+  let nearbyThreatCount = 0;
+  let closestDist = 9999;
+  if (typeof enemies !== "undefined" && enemies) {
+    for (let i = 0; i < enemies.length; i++) {
+      const en = enemies[i];
+      if (en.dead) continue;
+      const d = Math.hypot(en.x - player.x, en.y - player.y);
+      if (d < closestDist) closestDist = d;
+      if (d < 340) nearbyThreatCount++;
+    }
+  }
+
+  const threatDot = document.getElementById('threat-indicator-dot');
+  const threatText = document.getElementById('threat-status-text');
+  if (threatDot && threatText) {
+    const closestMeters = (closestDist / 28).toFixed(1);
+    if (nearbyThreatCount >= 14 || closestDist < 90) {
+      threatDot.className = 'threat-radar-indicator critical';
+      threatText.className = 'threat-status-label critical';
+      threatText.innerText = `⚠️ ALARM: HORDY (${nearbyThreatCount}) ${closestMeters}m`;
+    } else if (nearbyThreatCount >= 5 || closestDist < 220) {
+      threatDot.className = 'threat-radar-indicator warning';
+      threatText.className = 'threat-status-label warning';
+      threatText.innerText = `UWAGA: ${nearbyThreatCount} WROGÓW (${closestMeters}m)`;
+    } else {
+      threatDot.className = 'threat-radar-indicator';
+      threatText.className = 'threat-status-label';
+      threatText.innerText = `PERYMETR CZYSTY (${closestDist < 2000 ? closestMeters + 'm' : 'OK'})`;
+    }
+  }
+
+  // 3. Shift Clock & Kills
+  const clockElem = document.getElementById('badge-clock');
+  if (clockElem) clockElem.innerText = `TIME: ${timeStr}`;
+
+  // 4. Logistics Combo Multiplier
   const totalCombo = Math.max(comboCount, packageCombo);
   const currentMult = (1 + packageCombo * 0.15).toFixed(1);
   const comboBadge = document.getElementById('badge-combo');
-  if (packageCombo > 0) {
-    comboBadge.innerText = `🔥 COMBO x${totalCombo} (${currentMult}x PKT)`;
-    comboBadge.className = 'stat-badge badge-combo' + (packageCombo >= 15 ? ' hyper' : packageCombo >= 5 ? ' turbo' : '');
-  } else {
-    comboBadge.innerText = `🔥 COMBO x${Math.max(1, comboCount)}`;
-    comboBadge.className = 'stat-badge badge-combo';
+  if (comboBadge) {
+    if (packageCombo > 0) {
+      comboBadge.innerText = `COMBO x${totalCombo} (${currentMult}X)`;
+      comboBadge.className = 'stat-badge badge-combo' + (packageCombo >= 15 ? ' hyper' : packageCombo >= 5 ? ' turbo' : '');
+    } else {
+      comboBadge.innerText = `COMBO x${Math.max(1, comboCount)}`;
+      comboBadge.className = 'stat-badge badge-combo';
+    }
   }
 
-  document.getElementById('badge-lvl').innerText = `⭐ LVL ${playerLevel}`;
-  document.getElementById('badge-kills').innerText = `💀 ${kills}`;
-  document.getElementById('xp-fill').style.width = `${Math.min(100, (currentXP / neededXP) * 100)}%`;
+  // 5. Level & Kills Tally
+  const lvlElem = document.getElementById('badge-lvl');
+  if (lvlElem) lvlElem.innerText = `LVL ${playerLevel}`;
+  const killsElem = document.getElementById('badge-kills');
+  if (killsElem) killsElem.innerText = `DISP: ${kills}`;
+  const xpFillElem = document.getElementById('xp-fill');
+  if (xpFillElem) xpFillElem.style.width = `${Math.min(100, (currentXP / neededXP) * 100)}%`;
 
   updateBossTopBar();
 }

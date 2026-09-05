@@ -25,3 +25,8 @@ dependencyResolutionManagement {
 rootProject.name = "DTA Graniczna 8f"
 
 include(":app")
+
+if (file("unityLibrary").exists()) {
+  include(":unityLibrary")
+  project(":unityLibrary").projectDir = file("unityLibrary")
+}
