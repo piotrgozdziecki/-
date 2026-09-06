@@ -40,6 +40,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +54,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.example.data.AndroidGameBridge
 import com.example.data.AppDatabase
@@ -72,15 +76,37 @@ class MainActivity : ComponentActivity() {
     database = AppDatabase.getDatabase(this, lifecycleScope)
     repository = GameRepository(database.gameDao())
 
+    try {
+      if (!java.io.File("/dev/dri/renderD128").exists()) {
+        android.system.Os.setenv("LIBGL_ALWAYS_SOFTWARE", "1", true)
+      }
+    } catch (_: Exception) {}
+
+    // Proactively initialize WebView cache directory structure to prevent Chromium file enumerator errors
+    try {
+      val cacheBase = java.io.File(cacheDir, "WebView/Default/HTTP Cache")
+      val jsDir = java.io.File(cacheBase, "Code Cache/js")
+      val wasmDir = java.io.File(cacheBase, "Code Cache/wasm")
+      val indexDir = java.io.File(cacheBase, "index-dir")
+      if (!jsDir.exists()) jsDir.mkdirs()
+      if (!wasmDir.exists()) wasmDir.mkdirs()
+      if (!indexDir.exists()) indexDir.mkdirs()
+    } catch (e: Exception) {
+      android.util.Log.w("MainActivity", "Failed creating WebView cache directories: ${e.message}")
+    }
+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
       window.attributes.layoutInDisplayCutoutMode =
         WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
     }
 
-    // Poco F6 / Snapdragon 8s Gen 3 Ultra-High 120Hz Refresh Rate Setup
+    // Poco F6 / Snapdragon 8s Gen 3 Ultra-High 120Hz Refresh Rate Setup on physical hardware
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
       try {
-        window.attributes.preferredRefreshRate = 120f
+        val hasDri = java.io.File("/dev/dri/renderD128").exists()
+        if (hasDri) {
+          window.attributes.preferredRefreshRate = 120f
+        }
       } catch (_: Exception) {}
     }
 
@@ -93,6 +119,15 @@ class MainActivity : ComponentActivity() {
         var currentLevelForCards by remember { mutableIntStateOf(1) }
         
         val bridgeRef = bridgeState.value
+
+        androidx.activity.compose.BackHandler(enabled = true) {
+          if (showCardSelectionScreen) {
+            bridgeRef?.skipLevelUpInGame()
+            showCardSelectionScreen = false
+          } else if (!showIntroScreen) {
+            bridgeRef?.togglePauseInGame()
+          }
+        }
 
         Box(
           modifier = Modifier.fillMaxSize()
@@ -119,6 +154,14 @@ class MainActivity : ComponentActivity() {
           ForkliftHudComposeOverlay(
             bridge = bridgeRef,
             isVisible = !showIntroScreen && !showCardSelectionScreen
+          )
+
+          // 60 FPS Compose Game Loop Component driven by LaunchedEffect and withFrameNanos
+          com.example.ui.GameLoop(
+            isInitialized = isWebViewLoaded && !showIntroScreen && bridgeRef != null,
+            onFrameUpdate = { dtSeconds ->
+              bridgeRef?.onFrameTick(dtSeconds)
+            }
           )
 
           // Compose Level-Up Card Selection Overlay
@@ -152,6 +195,49 @@ class MainActivity : ComponentActivity() {
       }
     }
   }
+
+  override fun onPause() {
+    super.onPause()
+    webViewRef?.let { webView ->
+      webView.onPause()
+      webView.pauseTimers()
+      webView.evaluateJavascript("if (window.onAndroidAppPause) window.onAndroidAppPause();", null)
+    }
+  }
+
+  override fun onResume() {
+    super.onResume()
+    webViewRef?.let { webView ->
+      webView.onResume()
+      webView.resumeTimers()
+      webView.evaluateJavascript("if (window.onAndroidAppResume) window.onAndroidAppResume();", null)
+    }
+  }
+
+  override fun onStop() {
+    super.onStop()
+    webViewRef?.let { webView ->
+      webView.pauseTimers()
+    }
+  }
+
+  override fun onStart() {
+    super.onStart()
+    webViewRef?.let { webView ->
+      webView.resumeTimers()
+    }
+  }
+
+  override fun onDestroy() {
+    webViewRef?.let { webView ->
+      webView.stopLoading()
+      webView.removeJavascriptInterface("AndroidBridge")
+      (webView.parent as? ViewGroup)?.removeView(webView)
+      webView.destroy()
+    }
+    webViewRef = null
+    super.onDestroy()
+  }
 }
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -164,7 +250,43 @@ fun GameWebView(
   onPageFinished: (() -> Unit)? = null
 ) {
   val context = androidx.compose.ui.platform.LocalContext.current
-  val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+  val lifecycleOwner = LocalLifecycleOwner.current
+  var activeWebView by remember { mutableStateOf<WebView?>(null) }
+
+  DisposableEffect(lifecycleOwner) {
+    val observer = LifecycleEventObserver { _, event ->
+      when (event) {
+        Lifecycle.Event.ON_PAUSE -> {
+          activeWebView?.let { wv ->
+            wv.onPause()
+            wv.pauseTimers()
+            wv.evaluateJavascript("if (window.onAndroidAppPause) window.onAndroidAppPause();", null)
+          }
+        }
+        Lifecycle.Event.ON_RESUME -> {
+          activeWebView?.let { wv ->
+            wv.onResume()
+            wv.resumeTimers()
+            wv.evaluateJavascript("if (window.onAndroidAppResume) window.onAndroidAppResume();", null)
+          }
+        }
+        Lifecycle.Event.ON_DESTROY -> {
+          activeWebView?.let { wv ->
+            wv.stopLoading()
+            wv.removeJavascriptInterface("AndroidBridge")
+            (wv.parent as? ViewGroup)?.removeView(wv)
+            wv.destroy()
+          }
+          activeWebView = null
+        }
+        else -> {}
+      }
+    }
+    lifecycleOwner.lifecycle.addObserver(observer)
+    onDispose {
+      lifecycleOwner.lifecycle.removeObserver(observer)
+    }
+  }
 
   AndroidView(
     modifier = modifier.fillMaxSize(),
@@ -182,12 +304,45 @@ fun GameWebView(
         android.util.Log.w("MainActivity", "Failed creating WebView cache directories: ${e.message}")
       }
 
+      var crashCount = 0
+      val isEmulator = Build.FINGERPRINT.startsWith("generic") ||
+          Build.FINGERPRINT.startsWith("unknown") ||
+          Build.FINGERPRINT.contains("vbox") ||
+          Build.FINGERPRINT.contains("test-keys") ||
+          Build.MODEL.contains("google_sdk") ||
+          Build.MODEL.contains("Emulator") ||
+          Build.MODEL.contains("Android SDK built for x86") ||
+          Build.HARDWARE.contains("goldfish") ||
+          Build.HARDWARE.contains("ranchu") ||
+          Build.HARDWARE.contains("cutf") ||
+          Build.PRODUCT.contains("sdk") ||
+          Build.PRODUCT.contains("google_sdk") ||
+          Build.PRODUCT.contains("emulator") ||
+          Build.BOARD.contains("goldfish") ||
+          Build.MANUFACTURER.contains("Genymotion")
+
+      val hasRenderNode = try {
+        java.io.File("/dev/dri/renderD128").exists()
+      } catch (_: Exception) {
+        false
+      }
+
       WebView(ctx).apply {
+        activeWebView = this
         layoutParams = ViewGroup.LayoutParams(
           ViewGroup.LayoutParams.MATCH_PARENT,
           ViewGroup.LayoutParams.MATCH_PARENT
         )
-        setLayerType(View.LAYER_TYPE_NONE, null)
+        
+        // In virtualized/emulator environments without /dev/dri/renderD128,
+        // use LAYER_TYPE_SOFTWARE to prevent Mesa from failing to open nonexistent rendernodes.
+        // On physical devices with GPU rendernodes, LAYER_TYPE_NONE allows full hardware acceleration.
+        if (isEmulator || !hasRenderNode) {
+          setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+        } else {
+          setLayerType(View.LAYER_TYPE_NONE, null)
+        }
+
         setBackgroundColor(android.graphics.Color.parseColor("#030712"))
         isVerticalScrollBarEnabled = false
         isHorizontalScrollBarEnabled = false
@@ -202,7 +357,7 @@ fun GameWebView(
           useWideViewPort = true
           loadWithOverviewMode = true
           textZoom = 100
-          cacheMode = WebSettings.LOAD_DEFAULT
+          cacheMode = WebSettings.LOAD_NO_CACHE
           setSupportZoom(false)
           builtInZoomControls = false
           displayZoomControls = false
@@ -224,6 +379,10 @@ fun GameWebView(
             scope = lifecycleOwner.lifecycleScope,
             getWebView = { this }
           )
+          bridge.onRequestSoftwareRendering = {
+            android.util.Log.e("WebViewRender", "Manual SOFTWARE rendering fallback triggered via Bridge.")
+            setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+          }
           addJavascriptInterface(bridge, "AndroidBridge")
           onBridgeCreated?.invoke(bridge)
         }
@@ -248,7 +407,20 @@ fun GameWebView(
             view: WebView?,
             detail: android.webkit.RenderProcessGoneDetail?
           ): Boolean {
-            android.util.Log.w("WebViewRender", "Render process gone handled gracefully.")
+            crashCount++
+            val didCrash = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+              detail?.didCrash() == true
+            } else {
+              true
+            }
+            android.util.Log.w("WebViewRender", "Render process gone. didCrash=$didCrash, crashCount=$crashCount")
+            
+            if (crashCount >= 2) {
+              android.util.Log.e("WebViewRender", "Repeated WebView crashes detected. Falling back to SOFTWARE rendering.")
+              view?.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+            }
+            
+            view?.loadUrl("file:///android_asset/game.html")
             return true
           }
         }

@@ -44,9 +44,18 @@ class AndroidGameBridge(
     private val getWebView: () -> WebView?
 ) {
     var onComposeLevelUpRequested: ((Int) -> Unit)? = null
+    var onRequestSoftwareRendering: (() -> Unit)? = null
 
     private val _hudState = MutableStateFlow(HudTelemetryState())
     val hudState: StateFlow<HudTelemetryState> = _hudState
+
+    @JavascriptInterface
+    fun requestSoftwareRendering() {
+        android.util.Log.w("AndroidBridge", "Javascript requested Software Rendering fallback.")
+        scope.launch(Dispatchers.Main) {
+            onRequestSoftwareRendering?.invoke()
+        }
+    }
 
     @JavascriptInterface
     fun updateHudTelemetry(
@@ -88,6 +97,12 @@ class AndroidGameBridge(
             isLowBattery = batteryPct <= 25f,
             isGameActive = isGameActive
         )
+    }
+
+    fun onFrameTick(dtSeconds: Float) {
+        scope.launch(Dispatchers.Main) {
+            getWebView()?.evaluateJavascript("if (window.onComposeFrameTick) window.onComposeFrameTick($dtSeconds);", null)
+        }
     }
 
     fun toggleZoomInGame() {

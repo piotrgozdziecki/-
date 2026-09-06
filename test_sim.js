@@ -1,2396 +1,21 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#020617">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>DTA Graniczna 8f: Nocna Zmiana</title>
-  <script>
-    if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
-      CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, radii) {
-        if (typeof radii === 'number') radii = [radii, radii, radii, radii];
-        else if (!Array.isArray(radii)) radii = [4, 4, 4, 4];
-        const r = Math.min(radii[0] || 0, w / 2, h / 2);
-        this.beginPath();
-        this.moveTo(x + r, y);
-        this.lineTo(x + w - r, y);
-        this.quadraticCurveTo(x + w, y, x + w, y + r);
-        this.lineTo(x + w, y + h - r);
-        this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-        this.lineTo(x + r, y + h);
-        this.quadraticCurveTo(x, y + h, x, y + h - r);
-        this.lineTo(x, y + r);
-        this.quadraticCurveTo(x, y, x + r, y);
-        this.closePath();
-        return this;
-      };
-    }
-    window.onerror = function(msg, url, line, col, error) {
-      console.error("GLOBAL ERROR: " + msg + " at " + url + ":" + line + ":" + col, error);
-      return false;
+
+    const document = {
+      getElementById: () => ({ style: {}, classList: { remove: ()=>{} }, addEventListener: ()=>{}, width: 800, height: 600, getContext: () => ({ font: '', fillStyle: '', fillRect: ()=>{}, save: ()=>{}, restore: ()=>{}, beginPath: ()=>{}, arc: ()=>{}, fill: ()=>{}, strokeStyle: '', strokeRect: ()=>{}, measureText: ()=>({width: 10}), clearRect: ()=>{}, fillText: ()=>{}, stroke: ()=>{}, moveTo: ()=>{}, lineTo: ()=>{}, translate: ()=>{}, rotate: ()=>{}, scale: ()=>{}, globalAlpha: 1 }) }),
+      querySelectorAll: () => ([]),
+      createElement: () => ({ style: {}, classList: { add: ()=>{} }, appendChild: ()=>{}, width: 800, height: 600, getContext: () => ({ fillStyle: '', fillRect: ()=>{}, save: ()=>{}, restore: ()=>{}, beginPath: ()=>{}, arc: ()=>{}, fill: ()=>{}, strokeStyle: '', strokeRect: ()=>{}, clearRect: ()=>{}, fillText: ()=>{}, stroke: ()=>{}, moveTo: ()=>{}, lineTo: ()=>{}, translate: ()=>{}, rotate: ()=>{}, scale: ()=>{}, globalAlpha: 1 }) }),
+      body: { appendChild: ()=>{} }
     };
-    window.onunhandledrejection = function(event) {
-      console.error("UNHANDLED REJECTION: " + event.reason);
-    };
-    
-    // Proactive HTML5 2D Engine Initializer
-    (function initEngineEnv() {
-      console.log("DTA Warehouse Survivor HTML5 2D Engine Ready.");
-    })();
-  </script>
-  <style>
-    :root {
-      --toyota-red: #E31D1A;
-      --toyota-dark-red: #B01715;
-      --industrial-yellow: #FACC15;
-      --industrial-amber: #F59E0B;
-      --tech-blue: #38BDF8;
-      --tech-cyan: #06B6D4;
-      --ui-bg: rgba(8, 14, 26, 0.88);
-      --ui-glass: rgba(15, 23, 42, 0.75);
-      --ui-border: rgba(255, 255, 255, 0.12);
-      --ui-glow: rgba(56, 189, 248, 0.2);
-    }
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #020617;
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Roboto, 'Segoe UI', sans-serif;
-      color: #f8fafc;
-      touch-action: none;
-      -webkit-font-smoothing: antialiased;
-      padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
-    }
-    /* CRT Scanline Overlay */
-    #game-container::after {
-      content: " ";
-      display: block;
-      position: absolute;
-      top: 0; left: 0; bottom: 0; right: 0;
-      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
-      z-index: 100;
-      background-size: 100% 3px, 3px 100%;
-      pointer-events: none;
-      opacity: 0.45;
-    }
-    #game-container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      background: #020617;
-      overflow: hidden;
-    }
-    canvas {
-      touch-action: none;
-      display: block;
-      width: 100%;
-      height: 100%;
-      background: transparent;
-      image-rendering: pixelated;
-      image-rendering: -moz-crisp-edges;
-      image-rendering: crisp-edges;
-    }
-    #gameCanvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      display: block;
-    }
-
-
-    /* HUD */
-    #hud {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 10;
-    }
-    .xp-bar-container {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: rgba(3, 7, 18, 0.5);
-      z-index: 100;
-      overflow: hidden;
-    }
-
-    .xp-bar-fill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #38bdf8, #818cf8, #34d399);
-      box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
-      transition: width 0.3s ease;
-    }
-
-    .hud-top-bar {
-      position: absolute;
-      top: max(env(safe-area-inset-top, 12px), 12px);
-      left: 12px;
-      right: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      pointer-events: none;
-      z-index: 90;
-    }
-
-    .dashboard-operator {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(56, 189, 248, 0.3);
-      border-radius: 12px;
-      padding: 6px 12px;
-      width: 100%;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-      pointer-events: auto;
-    }
-
-    .dash-section {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .dash-item {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .dash-label {
-      font-size: 8px;
-      font-weight: 900;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-    }
-
-    .dash-value {
-      font-size: 14px;
-      font-weight: 900;
-      color: #f8fafc;
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .dash-divider {
-      width: 1px;
-      height: 24px;
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    /* Battery Widget */
-    .battery-widget {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 100px;
-    }
-    
-    .battery-icon-container {
-      width: 24px;
-      height: 12px;
-      border: 1.5px solid #94a3b8;
-      border-radius: 2px;
-      position: relative;
-      padding: 1px;
-    }
-    
-    .battery-icon-container::after {
-      content: '';
-      position: absolute;
-      right: -3px;
-      top: 3px;
-      width: 2px;
-      height: 4px;
-      background: #94a3b8;
-      border-radius: 0 1px 1px 0;
-    }
-
-    .battery-level-fill {
-      height: 100%;
-      background: #22c55e;
-      transition: width 0.3s ease, background 0.3s ease;
-    }
-    
-    .battery-level-fill.warning { background: #f59e0b; }
-    .battery-level-fill.critical { background: #ef4444; animation: battery-blink 0.5s infinite; }
-
-    @keyframes battery-blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-
-    /* Secondary HUD row */
-    .hud-secondary-row {
-      display: flex;
-      justify-content: flex-end;
-      gap: 6px;
-    }
-
-    .mini-badge {
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 10px;
-      font-weight: 800;
-      color: #94a3b8;
-      pointer-events: auto;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    
-    .mini-badge:hover {
-      border-color: #38bdf8;
-      color: #f8fafc;
-    }
-
-    .threat-radar-mini {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(6, 182, 212, 0.3);
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 10px;
-      font-weight: 900;
-      color: #22d3ee;
-    }
-    
-    .radar-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #22d3ee;
-      box-shadow: 0 0 8px #22d3ee;
-      animation: sonarPulse 2s infinite ease-out;
-    }
-
-    .radar-dot.warning { background: #f59e0b; box-shadow: 0 0 10px #f59e0b; }
-    .radar-dot.critical { background: #ef4444; box-shadow: 0 0 12px #ef4444; animation: battery-blink 0.3s infinite; }
-
-
-    /* Tactical Stats Badges */
-    .stat-badge {
-      background: rgba(10, 16, 26, 0.96);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      padding: 6px 10px;
-      border-radius: 2px;
-      font-size: 10.5px;
-      font-family: "JetBrains Mono", monospace;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      letter-spacing: 0.5px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
-      white-space: nowrap;
-      color: #cbd5e1;
-      text-transform: uppercase;
-    }
-    .stat-badge-btn {
-      cursor: pointer;
-      user-select: none;
-      transition: all 0.15s ease;
-      min-height: 28px;
-    }
-    .stat-badge-btn:hover {
-      background: rgba(30, 41, 59, 0.98);
-      border-color: #38bdf8;
-      color: #38bdf8;
-    }
-    .stat-badge-btn:active {
-      transform: scale(0.96);
-    }
-
-    .badge-clock { border-color: rgba(245, 158, 11, 0.3); color: #fbbf24; }
-    .badge-combo { border-color: rgba(236, 72, 153, 0.3); color: #f472b6; }
-    .badge-combo.turbo { border-color: #f59e0b; color: #fbbf24; animation: pulseTurbo 0.6s infinite alternate; }
-    .badge-combo.hyper { border-color: #38bdf8; color: #7dd3fc; animation: pulseHyper 0.35s infinite alternate; }
-    .badge-lvl { border-color: rgba(168, 85, 247, 0.3); color: #c084fc; }
-
-    @media (max-width: 640px) {
-      .badge-char { display: none !important; }
-      #badge-zoom { display: none !important; }
-      .hud-threat-card { min-width: 120px; padding: 4px 6px; }
-      .hud-battery-card { min-width: 115px; padding: 4px 6px; }
-      .battery-bar-track { width: 52px; }
-      .stat-badge { font-size: 10px !important; padding: 3px 5px !important; }
-    }
-
-    @keyframes pulseTurbo {
-      from { transform: scale(1); box-shadow: 0 0 8px rgba(245, 158, 11, 0.5); }
-      to { transform: scale(1.06); box-shadow: 0 0 20px rgba(245, 158, 11, 0.9); }
-    }
-    @keyframes pulseHyper {
-      from { transform: scale(1.02); box-shadow: 0 0 12px rgba(56, 189, 248, 0.6); }
-      to { transform: scale(1.1); box-shadow: 0 0 26px rgba(168, 85, 247, 0.9); }
-    }
-    @keyframes pulseAlert {
-      from { transform: scale(1); box-shadow: 0 0 6px #ef4444; }
-      to { transform: scale(1.06); box-shadow: 0 0 20px #ef4444; }
-    }
-
-    #boss-hp-container {
-      position: absolute;
-      top: 54px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: min(92%, 460px);
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-      z-index: 15;
-    }
-    .boss-name-label {
-      font-size: 12.5px;
-      font-weight: 900;
-      color: #fca5a5;
-      text-transform: uppercase;
-      letter-spacing: 1.2px;
-      text-shadow: 0 0 12px rgba(239, 68, 68, 0.9);
-    }
-    .boss-hp-track {
-      width: 100%;
-      height: 14px;
-      background: rgba(0, 0, 0, 0.92);
-      border: 2px solid #ef4444;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 0 14px rgba(239, 68, 68, 0.6);
-    }
-    .boss-hp-fill {
-      height: 100%;
-      width: 100%;
-      background: linear-gradient(90deg, #991b1b, #ef4444, #fca5a5);
-      transition: width 0.08s ease-out;
-    }
-
-    /* Active Weapons Indicator in HUD */
-    .weapons-hud {
-      position: absolute;
-      bottom: max(env(safe-area-inset-bottom, 14px), 14px);
-      left: 14px;
-      display: flex;
-      gap: 7px;
-    }
-    .weapon-hud-slot {
-      width: 36px;
-      height: 36px;
-      background: rgba(8, 14, 26, 0.88);
-      border: 1.5px solid #38bdf8;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      position: relative;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.6);
-    }
-    .weapon-hud-slot.evo {
-      border-color: #f59e0b;
-      box-shadow: 0 0 12px #f59e0b;
-      animation: pulseAlert 1s infinite alternate;
-    }
-
-    /* Touch Controls */
-    #touch-controls {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 20;
-    }
-    .joystick-zone {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 50%;
-      height: 70%;
-      pointer-events: auto;
-    }
-    .joystick-base {
-      position: absolute;
-      width: 126px;
-      height: 126px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(56, 189, 248, 0.25) 0%, rgba(8, 14, 26, 0.8) 80%);
-      border: 2px solid rgba(56, 189, 248, 0.8);
-      box-shadow: 0 0 22px rgba(56, 189, 248, 0.4);
-      transform: translate(-50%, -50%);
-      display: none;
-      pointer-events: none;
-    }
-    .joystick-thumb {
-      position: absolute;
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      background: radial-gradient(circle, #7dd3fc 15%, #0284c7 85%);
-      border: 2.5px solid #ffffff;
-      box-shadow: 0 0 16px rgba(56, 189, 248, 0.8);
-      transform: translate(-50%, -50%);
-      display: none;
-      pointer-events: none;
-    }
-    /* Action Buttons */
-    .action-zone {
-      position: absolute;
-      bottom: max(env(safe-area-inset-bottom, 16px), 16px);
-      right: max(env(safe-area-inset-right, 16px), 16px);
-      pointer-events: auto;
-      display: flex;
-      flex-direction: row;
-      align-items: flex-end;
-      gap: clamp(8px, 2vw, 14px);
-    }
-    .action-btn-secondary {
-      width: clamp(54px, 13vw, 68px);
-      height: clamp(54px, 13vw, 68px);
-      border-radius: 50%;
-      background: radial-gradient(circle, #8b5cf6, #5b21b6);
-      border: 2px solid #ede9fe;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-size: clamp(7.5px, 1.8vw, 9px);
-      font-weight: 900;
-      text-transform: uppercase;
-      box-shadow: 0 4px 14px rgba(139, 92, 246, 0.5);
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-      touch-action: none;
-    }
-    .action-btn-secondary:active { transform: scale(0.92); }
-    .action-btn-secondary .btn-cd {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      border-radius: 50%;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: 900;
-      color: #c4b5fd;
-    }
-
-    /* Intro cutscene dialog & Graphic Stages */
-    #intro-screen {
-      background: rgba(3, 5, 11, 0.97);
-      z-index: 120;
-    }
-    .intro-modal {
-      max-width: 620px;
-      width: 95%;
-      background: #090e17;
-      border: 3px solid #f59e0b;
-      border-radius: 20px;
-      padding: 16px;
-      box-shadow: 0 0 45px rgba(245, 158, 11, 0.35), inset 0 0 20px rgba(0, 0, 0, 0.8);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      text-align: left;
-    }
-    .intro-top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #1e293b;
-      padding-bottom: 6px;
-    }
-    .intro-meta-tags {
-      display: flex;
-      gap: 6px;
-      font-size: 10px;
-      font-weight: 800;
-      color: #94a3b8;
-    }
-    .intro-meta-tag {
-      background: #1e293b;
-      padding: 2px 6px;
-      border-radius: 4px;
-      border: 1px solid #334155;
-    }
-    .intro-meta-tag.alert {
-      background: #7f1d1d;
-      color: #fca5a5;
-      border-color: #ef4444;
-      animation: pulseAlert 1.2s infinite alternate;
-    }
-    @keyframes pulseAlert {
-      from { opacity: 0.7; }
-      to { opacity: 1.0; transform: scale(1.03); }
-    }
-
-    /* Graphic Illustration Box */
-    .intro-art-stage {
-      width: 100%;
-      height: 145px;
-      border-radius: 12px;
-      border: 2px solid #334155;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #020617;
-      box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
-    }
-    .intro-art-badge {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      background: rgba(0, 0, 0, 0.85);
-      border: 1px solid #f59e0b;
-      color: #fbbf24;
-      font-size: 10px;
-      font-weight: 900;
-      padding: 3px 8px;
-      border-radius: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    .intro-art-stamp {
-      position: absolute;
-      bottom: 8px;
-      right: 12px;
-      border: 3px dashed #ef4444;
-      color: #ef4444;
-      font-size: 14px;
-      font-weight: 900;
-      padding: 4px 10px;
-      border-radius: 6px;
-      text-transform: uppercase;
-      transform: rotate(-12deg);
-      background: rgba(0, 0, 0, 0.75);
-      letter-spacing: 1px;
-      z-index: 10;
-      text-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
-    }
-    .intro-art-satire {
-      position: absolute;
-      bottom: 6px;
-      left: 8px;
-      font-size: 9.5px;
-      font-style: italic;
-      color: #cbd5e1;
-      background: rgba(15, 23, 42, 0.85);
-      padding: 2px 6px;
-      border-radius: 4px;
-      border-left: 3px solid #f59e0b;
-      max-width: 60%;
-      z-index: 10;
-    }
-
-    .intro-scene {
-      background: #111827;
-      border-left: 5px solid #38bdf8;
-      border-radius: 8px;
-      padding: 10px 12px;
-      font-size: 12.5px;
-      line-height: 1.45;
-      color: #f1f5f9;
-      min-height: 85px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-    .intro-speaker {
-      font-weight: 900;
-      color: #38bdf8;
-      font-size: 13px;
-      margin-bottom: 4px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .intro-buttons {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      align-items: center;
-    }
-    .btn-skip {
-      background: #334155;
-      color: #94a3b8;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 16px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .btn-next {
-      background: linear-gradient(180deg, #f59e0b, #d97706);
-      color: #0f172a;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 20px;
-      font-size: 13px;
-      font-weight: 900;
-      cursor: pointer;
-    }
-    .action-btn {
-      width: clamp(62px, 15vw, 76px);
-      height: clamp(62px, 15vw, 76px);
-      border-radius: 50%;
-      background: radial-gradient(circle, #f97316, #c2410c);
-      border: 3px solid #ffedd5;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-size: clamp(8px, 2vw, 10px);
-      font-weight: 900;
-      text-transform: uppercase;
-      box-shadow: 0 4px 16px rgba(234, 88, 12, 0.5);
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-      touch-action: none;
-    }
-    .action-btn:active { transform: scale(0.92); }
-    .action-btn .btn-cd {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.75);
-      border-radius: 50%;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      font-weight: 900;
-      color: #fef08a;
-    }
-
-    /* Modal Screens */
-    .screen-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: radial-gradient(circle at center, rgba(17, 24, 39, 0.98) 0%, rgba(3, 7, 18, 1.0) 100%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      padding: 12px 10px;
-      z-index: 100;
-      text-align: center;
-      overflow-y: auto;
-      overflow-x: hidden;
-      touch-action: pan-y;
-      -webkit-overflow-scrolling: touch;
-    }
-    .screen-overlay::before {
-      content: " ";
-      display: block;
-      position: absolute;
-      top: 0; left: 0; bottom: 0; right: 0;
-      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.28) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
-      z-index: 200;
-      background-size: 100% 4px, 3px 100%;
-      pointer-events: none;
-    }
-    .screen-overlay::after {
-      content: " ";
-      display: block;
-      position: absolute;
-      top: 0; left: 0; bottom: 0; right: 0;
-      background: rgba(18, 16, 16, 0.12);
-      opacity: 0;
-      z-index: 200;
-      pointer-events: none;
-      animation: crtFlicker 0.18s infinite;
-    }
-    @keyframes crtFlicker {
-      0% { opacity: 0.22; }
-      10% { opacity: 0.31; }
-      20% { opacity: 0.18; }
-      30% { opacity: 0.25; }
-      40% { opacity: 0.19; }
-      50% { opacity: 0.28; }
-      60% { opacity: 0.21; }
-      70% { opacity: 0.33; }
-      80% { opacity: 0.23; }
-      90% { opacity: 0.30; }
-      100% { opacity: 0.25; }
-    }
-    .card-modal {
-      max-width: 620px;
-      width: 100%;
-      max-height: 88vh;
-      background: var(--ui-bg);
-      border: 1px solid var(--ui-border);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border-radius: 20px;
-      padding: 20px 18px;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.05);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      overflow-y: auto;
-      overflow-x: hidden;
-      touch-action: pan-y;
-      -webkit-overflow-scrolling: touch;
-      margin: auto 0;
-      position: relative;
-    }
-    h1 { 
-      font-size: 22px; 
-      font-weight: 900; 
-      color: var(--industrial-yellow); 
-      letter-spacing: -0.5px;
-      margin-bottom: -4px;
-    }
-    h2 { font-size: 14px; color: var(--tech-blue); font-weight: 700; }
-    p { font-size: 13px; line-height: 1.5; color: #cbd5e1; }
-    .story-box {
-      background: #0f141e;
-      border-left: 4px solid #ef4444;
-      padding: 8px 10px;
-      border-radius: 6px;
-      font-size: 11px;
-      text-align: left;
-      color: #fca5a5;
-      line-height: 1.4;
-    }
-
-    /* Character Selection Cards */
-    .char-section-title {
-      font-size: 11px;
-      font-weight: 900;
-      color: #38bdf8;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-top: 4px;
-      text-align: left;
-    }
-    .mode-selector {
-      display: flex;
-      gap: 6px;
-      margin: 4px 0;
-      touch-action: pan-y;
-    }
-    .mode-btn {
-      flex: 1;
-      background: var(--ui-glass);
-      border: 1.5px solid var(--ui-border);
-      border-radius: 12px;
-      padding: 10px 6px;
-      color: #94a3b8;
-      font-size: 11px;
-      font-weight: 800;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.2s;
-    }
-    .mode-btn.selected {
-      border-color: var(--tech-blue);
-      background: rgba(56, 189, 248, 0.12);
-      color: #fff;
-      box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
-    }
-    .arena-selection-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin: 8px 0;
-      touch-action: pan-y;
-    }
-    .arena-card {
-      background: var(--ui-glass);
-      border: 2px solid var(--ui-border);
-      border-radius: 12px;
-      padding: 10px 6px;
-      cursor: pointer;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .arena-card.selected {
-      border-color: var(--tech-blue);
-      background: rgba(56, 189, 248, 0.15);
-      box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
-      transform: scale(1.05);
-    }
-    .arena-icon { font-size: 20px; }
-    .arena-name { font-size: 10px; font-weight: 800; color: #f8fafc; }
-    .arena-perk { font-size: 8px; color: #38bdf8; line-height: 1.2; }
-
-    .char-selection-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 6px;
-      margin: 4px 0;
-      max-height: 280px;
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding-right: 4px;
-      touch-action: pan-y;
-      -webkit-overflow-scrolling: touch;
-    }
-    .char-card {
-      background: var(--ui-glass);
-      border: 2px solid var(--ui-border);
-      border-radius: 12px;
-      padding: 10px;
-      cursor: pointer;
-      text-align: left;
-      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      position: relative;
-      overflow: hidden;
-    }
-    .char-card:hover {
-      background: rgba(30, 41, 59, 0.95);
-      transform: translateY(-2px);
-      border-color: rgba(255,255,255,0.25);
-    }
-    .char-card.selected {
-      border-color: var(--toyota-red);
-      background: rgba(227, 29, 26, 0.12);
-      box-shadow: 0 0 15px rgba(227, 29, 26, 0.3);
-    }
-    .char-card.selected::before {
-      content: "SELECTED";
-      position: absolute;
-      top: 0; right: 0;
-      background: var(--toyota-red);
-      color: white;
-      font-size: 7px;
-      font-weight: 900;
-      padding: 2px 6px;
-      border-bottom-left-radius: 8px;
-    }
-    .char-header {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-weight: 800;
-      font-size: 12px;
-      color: #f59e0b;
-    }
-    .char-skill {
-      font-size: 9.5px;
-      color: #94a3b8;
-      margin-top: 3px;
-      line-height: 1.3;
-    }
-
-    .menu-tabs {
-      display: flex;
-      gap: 4px;
-      width: 100%;
-      background: #0b0e14;
-      padding: 3px;
-      border-radius: 8px;
-    }
-    .tab-btn {
-      flex: 1;
-      padding: 8px 4px;
-      font-size: 10.5px;
-      font-weight: 900;
-      color: #94a3b8;
-      background: transparent;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .tab-btn.active {
-      background: var(--tech-blue);
-      color: #020617;
-      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.4);
-    }
-    .tab-content { display: none; width: 100%; text-align: left; }
-    .tab-content.active { display: flex; flex-direction: column; gap: 8px; }
-
-    .sticky-start-wrapper {
-      position: sticky;
-      bottom: -16px;
-      background: #171d29;
-      padding: 12px 14px;
-      margin: 10px -14px -16px -14px;
-      z-index: 100;
-      border-top: 1px solid #334155;
-      box-shadow: 0 -10px 20px rgba(23, 29, 41, 0.95);
-    }
-    .btn-main {
-      background: linear-gradient(180deg, var(--toyota-red), var(--toyota-dark-red));
-      color: white;
-      font-size: 15px;
-      font-weight: 900;
-      padding: 14px 20px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,0.2);
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      width: 100%;
-      box-shadow: 0 8px 24px rgba(227, 29, 26, 0.3), inset 0 2px 4px rgba(255,255,255,0.2);
-      transition: all 0.2s;
-    }
-    .btn-main:active { 
-      transform: scale(0.96);
-      box-shadow: 0 4px 12px rgba(227, 29, 26, 0.2);
-    }
-
-    /* Highscores Table */
-    .scores-list {
-      max-height: 180px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-    .score-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 6px 8px;
-      background: #111622;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 6px;
-      font-size: 11px;
-    }
-
-    /* Achievements Grid */
-    .ach-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 6px;
-      max-height: 190px;
-      overflow-y: auto;
-    }
-    .ach-card {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 8px;
-      background: #111622;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      opacity: 0.55;
-    }
-    .ach-card.unlocked {
-      border-color: #f59e0b;
-      background: rgba(245, 158, 11, 0.1);
-      opacity: 1.0;
-    }
-    .ach-icon { font-size: 20px; width: 30px; text-align: center; }
-    .ach-title { font-size: 11px; font-weight: 800; color: #f59e0b; }
-    .ach-desc { font-size: 10px; color: #94a3b8; }
-
-    /* Evolutions Guide Grid */
-    .evo-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      max-height: 210px;
-      overflow-y: auto;
-    }
-    .evo-card {
-      background: var(--ui-glass);
-      border: 1px solid #a855f7;
-      border-radius: 12px;
-      padding: 10px 14px;
-      font-size: 12px;
-      box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
-      transition: all 0.2s;
-    }
-    .evo-card:hover {
-      background: rgba(168, 85, 247, 0.1);
-      transform: translateX(4px);
-    }
-    .evo-formula {
-      color: var(--tech-blue);
-      font-weight: 900;
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    /* Workshop (Shop) Grid */
-    .workshop-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 8px;
-      max-height: 220px;
-      overflow-y: auto;
-    }
-    .workshop-card {
-      background: var(--ui-glass);
-      border: 1px solid var(--ui-border);
-      border-radius: 14px;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      text-align: left;
-      transition: all 0.2s;
-    }
-    .workshop-card:hover {
-      background: rgba(30, 41, 59, 0.8);
-      border-color: rgba(255,255,255,0.2);
-    }
-    .workshop-name {
-      font-size: 13px;
-      font-weight: 900;
-      color: var(--industrial-yellow);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .workshop-desc {
-      font-size: 11px;
-      color: #94a3b8;
-      line-height: 1.4;
-    }
-    .upgrade-btn {
-      margin-top: 6px;
-      background: #1e293b;
-      color: #94a3b8;
-      font-size: 11px;
-      font-weight: 900;
-      padding: 8px 12px;
-      border-radius: 8px;
-      border: 1px solid #334155;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
-    .upgrade-btn.can-afford {
-      background: linear-gradient(180deg, var(--toyota-red), var(--toyota-dark-red));
-      color: white;
-      border: 1px solid rgba(255,255,255,0.2);
-    }
-    .upgrade-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    /* Decrees Lore List */
-    .decree-item {
-      background: var(--ui-glass);
-      border: 1px solid var(--industrial-amber);
-      border-radius: 12px;
-      padding: 12px;
-      margin-bottom: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    }
-    .decree-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      color: var(--industrial-yellow);
-      font-size: 13px;
-      font-weight: 900;
-      margin-bottom: 6px;
-    }
-    .decree-body {
-      font-size: 10.5px;
-      color: #e2e8f0;
-      line-height: 1.35;
-    }
-    .decree-perk {
-      font-size: 10px;
-      color: #38bdf8;
-      font-weight: 700;
-      margin-top: 3px;
-    }
-
-    /* Stage Transition Modal */
-    #stage-transition-screen { display: none; z-index: 150; }
-
-    /* Level Up Selection */
-    #levelup-screen { display: none; z-index: 120; }
-    .upgrade-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
-    .upgrade-card {
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.99));
-      border: 2px solid #38bdf8;
-      border-radius: 14px;
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      cursor: pointer;
-      text-align: left;
-      box-shadow: 0 6px 22px rgba(0, 0, 0, 0.9), inset 0 1px 1px rgba(255,255,255,0.2);
-      transition: transform 0.1s, border-color 0.15s;
-    }
-    .upgrade-card:active { transform: scale(0.97); }
-    .upgrade-card.is-evolution {
-      border-color: #f59e0b;
-      background: linear-gradient(135deg, rgba(120, 53, 15, 0.98), rgba(30, 58, 138, 0.99));
-      box-shadow: 0 0 25px rgba(245, 158, 11, 0.6), inset 0 1px 2px rgba(254, 240, 138, 0.4);
-      animation: pulseAlert 1.0s infinite alternate;
-    }
-    .card-icon { font-size: 30px; width: 44px; text-align: center; flex-shrink: 0; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.9)); }
-    .card-title { font-weight: 900; font-size: 15.5px; color: #38bdf8; letter-spacing: 0.4px; text-shadow: 0 1px 4px #000, 0 0 8px rgba(56, 189, 248, 0.4); }
-    .card-desc { font-size: 13px; color: #f8fafc; line-height: 1.4; font-weight: 600; text-shadow: 0 1px 3px #000; }
-    .card-level { font-size: 12px; font-weight: 900; color: #facc15; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 1px 3px #000; }
-
-    /* Toast */
-    #ach-toast {
-      position: absolute;
-      top: 15px;
-      left: 50%;
-      transform: translateX(-50%) translateY(-100px);
-      background: linear-gradient(90deg, #1e293b, #0f172a);
-      border: 2px solid #f59e0b;
-      border-radius: 10px;
-      padding: 8px 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      z-index: 200;
-      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      pointer-events: none;
-    }
-    #ach-toast.show { transform: translateX(-50%) translateY(0); }
-    .toast-title { font-size: 10px; font-weight: 900; color: #f59e0b; text-transform: uppercase; }
-    .toast-name { font-size: 12px; font-weight: 800; color: #fff; }
-
-    /* LUCKY CHEST MODAL (Vampire Survivors Style) */
-    #chest-screen { display: none; z-index: 160; }
-    .chest-modal {
-      background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
-      border: 3px solid #facc15;
-      border-radius: 20px;
-      padding: 20px;
-      width: 90%;
-      max-width: 440px;
-      text-align: center;
-      box-shadow: 0 0 50px rgba(250, 204, 21, 0.5), inset 0 0 20px rgba(250, 204, 21, 0.2);
-      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      position: relative;
-      overflow: hidden;
-    }
-    .chest-banner {
-      font-size: 22px;
-      font-weight: 900;
-      color: #facc15;
-      text-shadow: 0 0 15px rgba(250, 204, 21, 0.8), 0 2px 4px #000;
-      letter-spacing: 1px;
-      margin-bottom: 8px;
-    }
-    .chest-visual-box {
-      font-size: 64px;
-      margin: 10px 0;
-      filter: drop-shadow(0 0 25px #f59e0b);
-      animation: pulseAlert 0.8s infinite alternate;
-    }
-    .chest-slots-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin: 12px 0;
-    }
-    .chest-reward-card {
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
-      border: 2px solid #facc15;
-      border-radius: 12px;
-      padding: 10px 14px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      text-align: left;
-      animation: popIn 0.4s ease;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.6);
-    }
-
-    /* PAUSE MODAL (Build & Synergy Inspector) */
-    #pause-screen { display: none; z-index: 140; }
-    .pause-modal {
-      background: linear-gradient(145deg, #0f172a 0%, #020617 100%);
-      border: 2px solid #38bdf8;
-      border-radius: 18px;
-      padding: 18px;
-      width: 92%;
-      max-width: 480px;
-      max-height: 85vh;
-      overflow-y: auto;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9), inset 0 1px 1px rgba(255,255,255,0.2);
-    }
-    .pause-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid rgba(56, 189, 248, 0.3);
-      padding-bottom: 8px;
-      margin-bottom: 12px;
-    }
-    .pause-title { font-size: 18px; font-weight: 900; color: #38bdf8; letter-spacing: 0.5px; }
-    .pause-section-title {
-      font-size: 12px;
-      font-weight: 900;
-      color: #facc15;
-      text-transform: uppercase;
-      margin: 10px 0 6px 0;
-      letter-spacing: 0.5px;
-    }
-    .pause-gear-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 6px;
-    }
-    .pause-gear-pill {
-      background: rgba(30, 41, 59, 0.85);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 8px;
-      padding: 6px 8px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      color: #f8fafc;
-    }
-    .pause-gear-pill.is-evo {
-      border-color: #facc15;
-      background: rgba(120, 53, 15, 0.4);
-      color: #fef08a;
-    }
-    .synergy-list {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-    .synergy-row {
-      background: rgba(15, 23, 42, 0.7);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px;
-      padding: 6px 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 10.5px;
-    }
-    .synergy-row.active {
-      border-color: #4ade80;
-      background: rgba(34, 197, 94, 0.15);
-    }
-  
-/* Mobile Responsive & Smooth Touch Scrolling for Modals */
-.tab-content {
-  overflow-y: auto;
-  overflow-x: hidden;
-  max-height: calc(100vh - 120px);
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  padding-bottom: 30px;
-}
-
-.upgrade-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 60vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  padding: 4px;
-}
-
-.pause-modal, .workshop-grid, .intro-modal, .chest-modal {
-  touch-action: pan-y !important;
-  -webkit-overflow-scrolling: touch !important;
-}
-
-#levelup-screen, #pause-screen, #chest-screen, #stage-transition-screen, #gameover-screen, #win-screen {
-  touch-action: pan-y;
-  -webkit-overflow-scrolling: touch;
-}
-
-
-/* Enhanced Level-Up Card System Styling */
-.levelup-modal-container {
-  border-color: #38bdf8 !important;
-  max-width: 520px;
-  width: 92%;
-  background: rgba(15, 23, 42, 0.98) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.95), 0 0 20px rgba(56, 189, 248, 0.3) !important;
-  padding: 18px !important;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.levelup-modal-title {
-  color: #38bdf8;
-  font-size: 22px;
-  font-weight: 900;
-  margin: 0;
-  text-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
-  letter-spacing: 0.5px;
-}
-
-.levelup-modal-subtitle {
-  color: #cbd5e1;
-  font-size: 13px;
-  margin: 4px 0 0 0;
-}
-
-.upgrade-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 58vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  padding: 4px;
-}
-
-.upgrade-card {
-  position: relative;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.99));
-  border: 2px solid #38bdf8;
-  border-radius: 14px;
-  padding: 12px 14px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  text-align: left;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.15);
-  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.2s, box-shadow 0.2s;
-  animation: cardSlideIn 0.3s ease-out forwards;
-}
-
-@keyframes cardSlideIn {
-  from { opacity: 0; transform: translateY(15px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.upgrade-card:hover, .upgrade-card:active {
-  transform: translateY(-2px) scale(1.02);
-  border-color: #7dd3fc;
-  box-shadow: 0 10px 25px rgba(56, 189, 248, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.3);
-}
-
-.upgrade-card.is-weapon {
-  border-color: #38bdf8;
-  background: linear-gradient(135deg, rgba(14, 116, 144, 0.35), rgba(15, 23, 42, 0.98));
-}
-
-.upgrade-card.is-passive {
-  border-color: #22c55e;
-  background: linear-gradient(135deg, rgba(21, 128, 61, 0.35), rgba(15, 23, 42, 0.98));
-}
-
-.upgrade-card.is-passive:hover {
-  border-color: #4ade80;
-  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.4);
-}
-
-.upgrade-card.is-evolution {
-  border-color: #f59e0b;
-  background: linear-gradient(135deg, rgba(180, 83, 9, 0.6), rgba(30, 58, 138, 0.95));
-  box-shadow: 0 0 25px rgba(245, 158, 11, 0.6), inset 0 1px 2px rgba(254, 240, 138, 0.4);
-  animation: cardSlideIn 0.3s ease-out forwards, pulseGoldBorder 1.2s infinite alternate;
-}
-
-@keyframes pulseGoldBorder {
-  0% { border-color: #f59e0b; box-shadow: 0 0 15px rgba(245, 158, 11, 0.5); }
-  100% { border-color: #fde047; box-shadow: 0 0 30px rgba(250, 204, 21, 0.8); }
-}
-
-.upgrade-card.is-bonus {
-  border-color: #ef4444;
-  background: linear-gradient(135deg, rgba(185, 28, 28, 0.35), rgba(15, 23, 42, 0.98));
-}
-
-.card-icon-wrapper {
-  position: relative;
-  width: 48px;
-  height: 48px;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
-}
-
-.card-icon {
-  font-size: 28px;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.9));
-}
-
-.card-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.card-header-line {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.card-badge {
-  font-size: 9px;
-  font-weight: 900;
-  padding: 2px 5px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.badge-weapon { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.5); }
-.badge-passive { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.5); }
-.badge-evo { background: rgba(245, 158, 11, 0.3); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.8); }
-.badge-bonus { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.5); }
-
-.card-title {
-  font-weight: 900;
-  font-size: 14.5px;
-  color: #f8fafc;
-  letter-spacing: 0.3px;
-}
-
-.card-stars {
-  font-size: 11px;
-  color: #facc15;
-  letter-spacing: 1px;
-}
-
-.card-level-tag {
-  font-size: 10.5px;
-  font-weight: 800;
-  color: #facc15;
-  background: rgba(0,0,0,0.5);
-  padding: 1px 5px;
-  border-radius: 4px;
-}
-
-.card-desc {
-  font-size: 12px;
-  color: #cbd5e1;
-  line-height: 1.3;
-  font-weight: 500;
-}
-
-.card-stat-boost {
-  font-size: 11px;
-  font-weight: 700;
-  margin-top: 1px;
-}
-
-.card-action-bar {
-  display: flex;
-  gap: 10px;
-  margin-top: 4px;
-}
-
-.btn-card-action {
-  flex: 1;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-weight: 900;
-  font-size: 13px;
-  cursor: pointer;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all 0.15s;
-}
-
-.btn-reroll {
-  background: linear-gradient(135deg, #1e293b, #334155);
-  color: #38bdf8;
-  border: 1.5px solid #38bdf8;
-}
-
-.btn-reroll:hover {
-  background: #334155;
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
-}
-
-.btn-reroll:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  border-color: #64748b;
-  color: #64748b;
-}
-
-.btn-skip {
-  background: linear-gradient(135deg, #27272a, #3f3f46);
-  color: #facc15;
-  border: 1.5px solid #eab308;
-}
-
-.btn-skip:hover {
-  background: #3f3f46;
-  box-shadow: 0 0 12px rgba(234, 179, 8, 0.4);
-}
-
-
-    .vignette-overlay {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none;
-      background: radial-gradient(circle at center, transparent 30%, rgba(2, 6, 23, 0.94) 85%);
-      z-index: 4;
-    }
-    #floating-ui-container {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none;
-      overflow: hidden;
-      z-index: 10;
-    }
-    .hud-btn-pause {
-      width: 44px;
-      height: 44px;
-      min-width: 44px;
-      min-height: 44px;
-      background: rgba(15, 23, 42, 0.85);
-      border: 2px solid #38bdf8;
-      border-radius: 12px;
-      color: #38bdf8;
-      font-size: 18px;
-      font-weight: 900;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      touch-action: none;
-    }
-    .hud-btn-pause:active { transform: scale(0.92); }
-    .floating-dmg-text {
-      position: absolute;
-      top: 0; left: 0;
-      font-family: system-ui, -apple-system, sans-serif;
-      font-weight: 900;
-      font-size: 14px;
-      text-shadow: 0 2px 6px #000, 0 0 10px rgba(0,0,0,0.8);
-      pointer-events: none;
-      white-space: nowrap;
-      will-change: transform, opacity;
-      z-index: 12;
-    }
-    .speech-bubble-overlay {
-      position: absolute;
-      top: 0; left: 0;
-      background: rgba(15, 23, 42, 0.92);
-      border: 2px solid #38bdf8;
-      border-radius: 10px;
-      padding: 3px 8px;
-      font-family: system-ui, -apple-system, sans-serif;
-      font-weight: 800;
-      font-size: 11px;
-      color: #fff;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.7);
-      pointer-events: none;
-      white-space: nowrap;
-      will-change: transform;
-      z-index: 14;
-    }
-    .pause-tabs-bar {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      padding-bottom: 8px;
-    }
-    .pause-tab-btn {
-      flex: 1;
-      padding: 8px 4px;
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      color: #94a3b8;
-      font-size: 11px;
-      font-weight: 800;
-      cursor: pointer;
-      text-align: center;
-    }
-    .pause-tab-btn.active {
-      background: #1e293b;
-      border-color: #38bdf8;
-      color: #38bdf8;
-      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
-    }
-    .pause-tab-content {
-      margin-bottom: 10px;
-    }
-    .option-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 8px 12px;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      font-size: 12px;
-      color: #e2e8f0;
-      font-weight: 700;
-    }
-    .slider-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .btn-opt-toggle {
-      background: #1e293b;
-      border: 1px solid #38bdf8;
-      color: #38bdf8;
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-size: 11px;
-      font-weight: 800;
-      cursor: pointer;
-    }
-    .guide-box {
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      padding: 10px;
-      font-size: 11px;
-      line-height: 1.5;
-      color: #cbd5e1;
-    }
-    .guide-box p { margin: 0 0 8px 0; }
-    .exit-confirm-box {
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid #ef4444;
-      border-radius: 10px;
-      padding: 12px;
-    }
-
-</style>
-  <link rel="stylesheet" href="modern-ui.css">
-  
-  <!-- CORE SYSTEMS -->
-  <script src="js/core/EventBus.js"></script>
-  <script src="js/core/Time.js"></script>
-  <script src="js/core/GameState.js"></script>
-  <script src="js/core/GameLoop.js"></script>
-  
-  <!-- SYSTEMS -->
-  <script src="js/systems/ObjectPool.js"></script>
-  <script src="js/systems/SpatialGrid.js"></script>
-  <script src="js/systems/WaveDirector.js"></script>
-  <script src="js/systems/AdaptivePerformance.js"></script>
-  
-  <!-- UI, AUDIO, NATIVE & AI -->
-  <script src="js/ui/UIManager.js"></script>
-  <script src="js/audio/AudioEngine.js"></script>
-  <script src="js/native/AndroidBridge.js"></script>
-  <script src="js/ai/AIDirector.js"></script>
-</head>
-<body>
-<div id="game-container">
-  <div id="announcement" style="position: absolute; top: max(env(safe-area-inset-top, 12px), 36px); left: 50%; transform: translate(-50%, -10px) scale(0.95); opacity: 0; pointer-events: none; text-align: center; font-size: 13px; font-weight: 900; color: #38bdf8; background: rgba(15, 23, 42, 0.94); border: 1.5px solid #38bdf8; border-radius: 20px; padding: 6px 16px; box-shadow: 0 8px 25px rgba(0,0,0,0.7), 0 0 15px rgba(56, 189, 248, 0.25); transition: all 0.3s ease; z-index: 9999; white-space: nowrap; letter-spacing: 0.5px;"></div>
-    <canvas id="gameCanvas"></canvas>
-    <div class="vignette-overlay"></div>
-    <div id="floating-ui-container"></div>
-  
-
-  <div id="ach-toast" style="position: absolute; top: max(env(safe-area-inset-top, 10px), 12px); right: 12px; z-index: 10000; display: flex; align-items: center; gap: 8px; background: rgba(15, 23, 42, 0.95); border: 1.5px solid #f59e0b; border-radius: 12px; padding: 8px 14px; box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 15px rgba(245, 158, 11, 0.3); transform: translateX(120%); opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none;">
-    <div id="toast-icon" style="font-size: 24px;">🏆</div>
-    <div>
-      <div class="toast-title">⭐ ODBLOKOWANO OSIĄGNIĘCIE!</div>
-      <div class="toast-name" id="toast-name">Drift Master DTA</div>
-    </div>
-  </div>
-
-  <div id="hud">
-    <!-- Precision XP Bar (Full Width Top) -->
-    <div class="xp-bar-container">
-      <div id="xp-fill" class="xp-bar-fill"></div>
-    </div>
-  
-    <div class="hud-top-bar">
-      <!-- Main Dashboard: Operator Dashboard -->
-      <div class="dashboard-operator">
-        <!-- Left Section: Vehicle Battery -->
-        <div class="dash-section">
-          <div class="dash-item">
-            <span class="dash-label">Wózek (Bateria)</span>
-            <div class="battery-widget">
-               <div class="battery-icon-container">
-                 <div id="battery-bar-fill" class="battery-level-fill"></div>
-               </div>
-               <span id="badge-battery-val" class="dash-value">100%</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="dash-divider"></div>
-
-        <!-- Center Section: Operational Status -->
-        <div class="dash-section" style="gap: 20px;">
-          <div class="dash-item" style="align-items: center;">
-            <span class="dash-label">Poziom</span>
-            <span id="badge-lvl" class="dash-value" style="color: #a855f7;">1</span>
-          </div>
-          <div class="dash-item" style="align-items: center;">
-            <span class="dash-label">Strefa</span>
-            <span id="badge-sector" class="dash-value" style="color: #f59e0b;">S1</span>
-          </div>
-        </div>
-
-        <div class="dash-divider"></div>
-
-        <!-- Right Section: Shift Progress -->
-        <div class="dash-section">
-          <div class="dash-item" style="align-items: flex-end;">
-            <span class="dash-label">Czas Zmiany</span>
-            <span id="badge-clock" class="dash-value">00:00</span>
-          </div>
-          <div class="dash-item" style="align-items: flex-end;">
-            <span class="dash-label">Paczki</span>
-            <span id="badge-kills" class="dash-value" style="color: #ef4444;">0</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Secondary HUD row: Radar & Combo -->
-      <div class="hud-secondary-row">
-        <!-- Radar Threat Mini -->
-        <div id="hud-threat-panel" class="threat-radar-mini">
-          <div id="threat-indicator-dot" class="radar-dot"></div>
-          <span id="threat-status-text">PERYMETR CZYSTY</span>
-        </div>
-        
-        <!-- Action Badges -->
-        <div id="badge-combo" class="stat-badge badge-combo">COMBO x1</div>
-        
-        <div class="mini-badge" onclick="togglePause()">
-          <span>⚙️ MENU</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Active Weapons & Equipment Deck -->
-    <div id="weapons-hud" class="weapons-hud"></div>
-
-    <!-- Boss Health Bar -->
-    <div id="boss-hp-container">
-      <div id="boss-name" class="boss-name-label">ALARM: ZASTĘPCA GRZESIEK</div>
-      <div class="boss-hp-track">
-        <div id="boss-hp-fill" class="boss-hp-fill"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- DEVELOPER DEBUG HUD MODAL (DEV BUILDS) -->
-  <div id="debug-hud-modal" class="screen-overlay" style="display: none; background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(8px); justify-content: center; align-items: center; z-index: 9999; pointer-events: auto;">
-    <div style="background: #0f172a; border: 2px solid #38bdf8; border-radius: 12px; padding: 18px; width: 90%; max-width: 480px; font-family: monospace; color: #e2e8f0; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);">
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 12px;">
-        <span style="font-weight: 900; color: #38bdf8; font-size: 15px;">🛠️ ENGINE DEBUG HUD (DEV)</span>
-        <button onclick="toggleFpsDetails()" style="background: #ef4444; border: none; color: white; border-radius: 4px; padding: 4px 10px; font-weight: bold; cursor: pointer;">✕ ZAMKNIJ</button>
-      </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
-        <div style="background: #1e293b; padding: 8px; border-radius: 6px;">
-          <div style="color: #94a3b8; font-size: 10px;">FPS / FRAME TIME</div>
-          <div id="dbg-fps" style="font-size: 14px; font-weight: bold; color: #4ade80;">60 FPS (16.6 ms)</div>
-        </div>
-        <div style="background: #1e293b; padding: 8px; border-radius: 6px;">
-          <div style="color: #94a3b8; font-size: 10px;">SPATIAL GRID</div>
-          <div id="dbg-grid" style="font-size: 12px; font-weight: bold; color: #38bdf8;">32x32 Buckets (120px)</div>
-        </div>
-        <div style="background: #1e293b; padding: 8px; border-radius: 6px;">
-          <div style="color: #94a3b8; font-size: 10px;">ACTIVE ENEMIES</div>
-          <div id="dbg-enemies" style="font-size: 13px; font-weight: bold; color: #f87171;">0 / 180</div>
-        </div>
-        <div style="background: #1e293b; padding: 8px; border-radius: 6px;">
-          <div style="color: #94a3b8; font-size: 10px;">PROJECTILES</div>
-          <div id="dbg-projectiles" style="font-size: 13px; font-weight: bold; color: #fbbf24;">0</div>
-        </div>
-        <div style="background: #1e293b; padding: 8px; border-radius: 6px;">
-          <div style="color: #94a3b8; font-size: 10px;">PARTICLES (POOLED)</div>
-          <div id="dbg-particles" style="font-size: 13px; font-weight: bold; color: #a78bfa;">0 / 350</div>
-        </div>
-        <div style="background: #1e293b; padding: 8px; border-radius: 6px;">
-          <div style="color: #94a3b8; font-size: 10px;">FLOATING TEXTS (POOLED)</div>
-          <div id="dbg-floating" style="font-size: 13px; font-weight: bold; color: #38bdf8;">0 / 80</div>
-        </div>
-        <div style="background: #1e293b; padding: 8px; border-radius: 6px;">
-          <div style="color: #94a3b8; font-size: 10px;">DROPS & PROPS</div>
-          <div id="dbg-props" style="font-size: 12px; font-weight: bold; color: #34d399;">Drops: 0 | Props: 0</div>
-        </div>
-        <div style="background: #1e293b; padding: 8px; border-radius: 6px;">
-          <div style="color: #94a3b8; font-size: 10px;">CALCULATED DPS</div>
-          <div id="dbg-dps" style="font-size: 13px; font-weight: bold; color: #f43f5e;">0 DPS</div>
-        </div>
-      </div>
-      <div style="margin-top: 12px; background: #1e293b; padding: 8px; border-radius: 6px; font-size: 10px; color: #cbd5e1; display: flex; flex-direction: column; gap: 3px;">
-        <div>💾 BAZA DANYCH: <span style="color: #4ade80;">LOCAL ROOM (OFFLINE READY)</span></div>
-        <div>🔊 DŹWIĘK WEBAUDIO: <span style="color: #38bdf8;">POOLED SYNTESIZER ENGINE</span></div>
-        <div>🎨 SILNIK GRAFIKI: <span style="color: #f59e0b;">CANVAS 2D + SPLATTER ENGINE</span></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="touch-controls">
-    <div id="joystick-zone" class="joystick-zone"></div>
-    <div id="joystick-base"></div>
-    <div id="joystick-thumb"></div>
-    <div id="aim-joystick-base" class="joystick-base"></div>
-    <div id="aim-joystick-thumb" class="joystick-thumb"></div>
-
-    <div class="action-zone">
-      <!-- 24h Driver Detention Special Attack -->
-      <div id="btn-detention" class="action-btn-secondary">
-        <span style="font-size: 16px;">⏱️</span>
-        <span>24H SAD</span>
-        <div id="detention-cd" class="btn-cd">18s</div>
-      </div>
-      <!-- Forklift Burst -->
-      <div id="btn-forklift" class="action-btn-secondary" style="background: radial-gradient(circle, #f59e0b, #b45309); border-color: #fef3c7;">
-        <span style="font-size: 16px;">🚜</span>
-        <span>WÓZEK</span>
-      </div>
-      <!-- Character Active Skill -->
-      <div id="btn-dash" class="action-btn">
-        <span id="skill-icon" style="font-size: 20px;">⚡</span>
-        <span id="skill-label">SKILL</span>
-        <div id="dash-cd" class="btn-cd">8s</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- POLSKIE INTRO: ABSURD & HUMOR NOCNEJ ZMIANY -->
-  <div id="intro-screen" class="screen-overlay" style="display: none;">
-    <div class="intro-modal">
-      <div class="intro-top-bar">
-        <div style="font-size: 15px; font-weight: 900; color: #f59e0b; display: flex; align-items: center; gap: 6px;">
-          <span>🎬</span> DTA GRANICZNA 8f: ODPRAWA 03:15
-        </div>
-        <div class="intro-meta-tags">
-          <div class="intro-meta-tag">⏱️ 03:15:22</div>
-          <div class="intro-meta-tag">❄️ -2.4°C</div>
-          <div id="intro-alert-tag" class="intro-meta-tag alert">🛑 STAN: ALARM CELNY</div>
-        </div>
-      </div>
-
-      <!-- Graphic Comic Scene Canvas/Stage -->
-      <div id="intro-art-stage" class="intro-art-stage">
-        <div id="intro-art-badge" class="intro-art-badge">📍 LOKACJA</div>
-        <div id="intro-art-visual" style="width: 100%; height: 100%; position: relative;"></div>
-        <div id="intro-art-satire" class="intro-art-satire">...</div>
-        <div id="intro-art-stamp" class="intro-art-stamp">PIECZĘĆ</div>
-      </div>
-
-      <!-- Dialogue Scene Box -->
-      <div id="intro-scene-box" class="intro-scene">
-        <div id="intro-speaker" class="intro-speaker">🎙️ DYSPOZYTOR BAZY</div>
-        <div id="intro-text" class="intro-text">...</div>
-      </div>
-
-      <div class="intro-buttons">
-        <button id="btn-intro-skip" class="btn-skip" onclick="skipIntroBtn()">POMIŃ INTRO</button>
-        <button id="btn-intro-next" class="btn-next" onclick="nextIntroBtn()">DALEJ ➔</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- START & CHARACTER SELECTION -->
-  <div id="start-screen" class="screen-overlay" style="display: none;">
-    <div class="card-modal">
-      <h1>🚜 DTA GRANICZNA 8f: NOCNA ZMIANA</h1>
-      <h2>Horde Survival w Hali Logistycznej</h2>
-
-      <div class="menu-tabs">
-        <button class="tab-btn active" onclick="switchTab('play')">🎮 GRA & POSTAĆ</button>
-        <button class="tab-btn" onclick="switchTab('workshop')">🛠️ WARSZTAT BHP</button>
-        <button class="tab-btn" onclick="switchTab('decrees')">📜 DECYZJE ZARZĄDU</button>
-        <button class="tab-btn" onclick="switchTab('evolutions')">⚙️ EWOLUCJE</button>
-        <button class="tab-btn" onclick="switchTab('dictionary')">📕 BESTIARIUSZ</button>
-        <button class="tab-btn" onclick="switchTab('scores')">🏆 WYNIKI</button>
-        <button class="tab-btn" onclick="switchTab('achievements')">⭐ OSIĄGNIĘCIA</button>
-      </div>
-
-      <!-- Tab: PLAY & CHARACTER SELECT -->
-      <div id="tab-play" class="tab-content active">
-        <!-- GAME MODE SELECTOR -->
-        <div class="char-section-title">⏱️ Tryb Rozgrywki:</div>
-        <div class="mode-selector">
-          <div class="mode-btn selected" id="mode-standard" onclick="selectGameMode('standard', this)">
-            <span>🕒 ZMIANA (10 MIN)</span>
-            <span style="font-size:8.5px; color:#cbd5e1;">5 Sektorów & Bossowie do 07:00</span>
-          </div>
-          <div class="mode-btn" id="mode-endless" onclick="selectGameMode('endless', this)">
-            <span>♾️ TRYB NIESKOŃCZONY</span>
-            <span style="font-size:8.5px; color:#fca5a5;">Nadgodziny 300% & Bezlimit fal!</span>
-          </div>
-        </div>
-
-        <!-- ARENA / MAP SELECTOR -->
-        <div class="char-section-title">📍 Wybór Hali / Areny:</div>
-        <div class="arena-selection-grid">
-          <div class="arena-card selected" id="arena-main" onclick="selectArena('main', this)">
-            <div class="arena-icon">🏭</div>
-            <div class="arena-name">Hala Główna 8f</div>
-            <div class="arena-perk">Klasyczne regały & doki</div>
-          </div>
-          <div class="arena-card" id="arena-freezer" onclick="selectArena('freezer', this)">
-            <div class="arena-icon">❄️</div>
-            <div class="arena-name">Chłodnia -25°C</div>
-            <div class="arena-perk">Śliski drift & farelki BHP</div>
-          </div>
-          <div class="arena-card" id="arena-crossdock" onclick="selectArena('crossdock', this)">
-            <div class="arena-icon">🏗️</div>
-            <div class="arena-name">Cross-Dock 24H</div>
-            <div class="arena-perk">Ruchome taśmy & TIR-y</div>
-          </div>
-        </div>
-
-        <div class="char-section-title">📦 Brygada Magazynowa & Konserwacja:</div>
-        <div class="char-selection-grid">
-          <div class="char-card selected" onclick="selectCharacter('piotr', this)">
-            <div class="char-header"><span>📦🐕</span> Piotr (Opiekun Kluski)</div>
-            <div class="char-skill">✨ Pasywka: <b>Kundel Kluska</b> (+35% ataku, pies przywołuje XP)<br>🔫 Skill: <b>Gaz + Metalowe Kulki & Kluska!</b></div>
-          </div>
-          <div class="char-card" onclick="selectCharacter('mirek', this)">
-            <div class="char-header"><span>🔧</span> Pan Mirek (Złota Rączka)</div>
-            <div class="char-skill">✨ Pasywka: <b>Naprawa na Trytytkę</b> (+0.6 HP/s, +35% DMG maszyn)<br>⚡ Skill: <b>Młot Udarowy & Iskry 360°</b></div>
-          </div>
-          <div class="char-card" onclick="selectCharacter('radek', this)">
-            <div class="char-header"><span>🚜</span> Radek (Weteran BT)</div>
-            <div class="char-skill">✨ Pasywka: <b>Drift na Epoksydzie</b> (+20% spd & krytyk wideł)<br>⚡ Skill: <b>Szarża Widłami</b> (taranuje hordy)</div>
-          </div>
-          <div class="char-card" onclick="selectCharacter('pawel', this)">
-            <div class="char-header"><span>🪵</span> Paweł (Ekspert EPAL)</div>
-            <div class="char-skill">✨ Pasywka: <b>Żelazny Chwyt EPAL</b> (+30% DMG, +20% HP baterii)<br>⚡ Skill: <b>Salwa Paletowa 360°</b> (deszcz palet)</div>
-          </div>
-          <div class="char-card" onclick="selectCharacter('marcin', this)">
-            <div class="char-header"><span>🧻</span> Marcin (Nocny Wojownik)</div>
-            <div class="char-skill">✨ Pasywka: <b>Zapas Velvet Max</b> (+50% zasięgu papieru)<br>⚡ Skill: <b>Bomba Papierowa</b> (12 wirujących rolek)</div>
-          </div>
-        </div>
-
-        <div class="char-section-title">🏢 Kadra, Biuro Celne & Centrala:</div>
-        <div class="char-selection-grid">
-          <div class="char-card" onclick="selectCharacter('klaus', this)">
-            <div class="char-header"><span>🇩🇪</span> Audytor Klaus (Centrala)</div>
-            <div class="char-skill">✨ Pasywka: <b>Porządek DIN</b> (+25% spd pocisków, 4 karty wyboru!)<br>⚡ Skill: <b>Czerwony Długopis Audytu</b> (laser kontroli)</div>
-          </div>
-          <div class="char-card" onclick="selectCharacter('kierownik_marcin', this)">
-            <div class="char-header"><span>📢</span> Kierownik Marcin</div>
-            <div class="char-skill">✨ Pasywka: <b>Autorytet Kiero</b> (+50% baterii, aura respektu)<br>⚡ Skill: <b>Megafon Dyscyplinarny</b> (ogłuszenie i 120 DMG)</div>
-          </div>
-          <div class="char-card" onclick="selectCharacter('przemek_biuro', this)">
-            <div class="char-header"><span>💻</span> Przemek z biura</div>
-            <div class="char-skill">✨ Pasywka: <b>Optymalizacja WMS</b> (+80% magnesu XP, +30% EXP)<br>⚡ Skill: <b>Przeciążenie Sieci WMS</b> (impuls danych)</div>
-          </div>
-          <div class="char-card" onclick="selectCharacter('ania_biuro', this)">
-            <div class="char-header"><span>📋</span> Ania z biura</div>
-            <div class="char-skill">✨ Pasywka: <b>Błyskawiczna Rewizja</b> (+40% szansy na krytyk)<br>⚡ Skill: <b>Blokada Celna SAD</b> (zamrożenie chmary na 4s)</div>
-          </div>
-          <div class="char-card" onclick="selectCharacter('grzesiek_zastepca', this)">
-            <div class="char-header"><span>☕</span> Grzesiek zastępca kiero</div>
-            <div class="char-skill">✨ Pasywka: <b>Kawa & Pancerz BHP</b> (-40% DMG, regeneracja)<br>⚡ Skill: <b>Kontrola BHP i Rampy</b> (fala uderzeniowa)</div>
-          </div>
-        </div>
-
-        <div class="story-box">
-          ⚠️ <b>Progresja Zmiany:</b> Co 2 minuty pojawia się potężny Boss. W trybie Standardowym walczysz do 07:00, w trybie Nieskończonym przetrwaj najdłużej w Nadgodzinach 300%!
-        </div>
-
-        <div class="sticky-start-wrapper"><button id="btn-start" class="btn-main" onclick="startGame()">PODBIJ KARTĘ (ROZPOCZNIJ MĘKĘ)</button></div>
-      </div>
-
-      <!-- Tab: WARSZTAT BHP (PERMANENT SHOP) -->
-      <div id="tab-workshop" class="tab-content">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <p style="margin: 0;">🛠️ <b>Warsztat Ulepszeń Wózka BT:</b></p>
-          <div id="shop-coins-display" style="color: #facc15; font-weight: 900; font-size: 13px;">💰 0 MONET</div>
-        </div>
-        <div id="workshop-container" class="workshop-grid"></div>
-      </div>
-
-      <!-- Tab: DECYZJE ZARZĄDU (LORE & SATIRE) -->
-      <div id="tab-decrees" class="tab-content">
-        <p>📜 <b>Oficjalny Kodeks & Uchwały Zarządu DTA:</b></p>
-        <div class="evo-grid">
-          <div class="decree-item">
-            <div class="decree-header"><span>💡 UCHWAŁA NR 1/2026</span> <span style="color: #f59e0b;">ZATWIERDZONA</span></div>
-            <div class="decree-body">„W celu optymalizacji kosztów energii nakazuje się wykręcenie co drugiej żarówki w Alei 4 i 6. Pracownicy mają korzystać ze zmysłu echolokacji lub blasku ekranu skanera.”</div>
-            <div class="decree-perk">⚡ Wpływ na grę: Ciemniejsze sektory, reflektor wózka rozświetla drogę!</div>
-          </div>
-          <div class="decree-item">
-            <div class="decree-header"><span>🧻 UCHWAŁA NR 2/2026</span> <span style="color: #f59e0b;">ZATWIERDZONA</span></div>
-            <div class="decree-body">„Papier toaletowy Velvet Max stanowi strategiczną rezerwę magazynu. Wydawanie pojedynczych listków wyłącznie za pisemną zgodą Dyspozytora Bazy.”</div>
-            <div class="decree-perk">⚡ Wpływ na grę: Rolki Velvet tworzą potężne barykady spowalniające wrogów!</div>
-          </div>
-          <div class="decree-item">
-            <div class="decree-header"><span>☕ UCHWAŁA NR 3/2026</span> <span style="color: #f59e0b;">ZATWIERDZONA</span></div>
-            <div class="decree-body">„Ekspres w socjalnym wymaga wrzucenia żetonu BHP. Kawa pita w biegu zwiększa prędkość wózka o 30% i chwilowo eliminuje potrzebę snu.”</div>
-            <div class="decree-perk">⚡ Wpływ na grę: Termosy z kawą regenerują akumulator i dają turbo-doładowanie!</div>
-          </div>
-          <div class="decree-item">
-            <div class="decree-header"><span>🦅 UCHWAŁA NR 4/2026</span> <span style="color: #ef4444;">STAN WYJĄTKOWY</span></div>
-            <div class="decree-body">„W razie niezapowiedzianego audytu KAS o godzinie 03:30, wszyscy operatorzy wózków zobowiązani są do natychmiastowego manewrowania w strefach rewizji.”</div>
-            <div class="decree-perk">⚡ Wpływ na grę: Strefy rewizji KAS wymagają unikania czerwonych okręgów!</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab: ENCYKLOPEDIA DTA & BESTIARIUSZ -->
-      <div id="tab-dictionary" class="tab-content">
-        <p>📕 <b>Bestiariusz i Unikalne Jednostki Magazynu DTA:</b></p>
-        <div class="evo-grid">
-          <div class="evo-card">
-            <div class="evo-formula">🇩🇪 <b>Dyrektor Klaus von Audit (Mega-Boss)</b></div>
-            <div>Centrala Frankfurt. Wzywa kordon audytorów DIN, rzuca formularzami RODO i wstrzymuje premie!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🩴 <b>Kierowca w Klapkach Kubota</b></div>
-            <div>Biega po rampie w szortach przy -2°C, machając listem CMR i pytając o toaletę.</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">📦 <b>Zbłąkany Karton B2C</b></div>
-            <div>Corrugated 3D karton z etykietą FRAGILE. Rozsypuje się przy kontakcie z widłami.</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🚛 <b>Kierowca TIR-a w Kracie</b></div>
-            <div>Czapka z daszkiem, koszula flanelowa, kubek czarnej kawy i szarża pod rampę.</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🚐 <b>Bus „Ja tylko dwie palety”</b></div>
-            <div>Biały bus ze stroboskopem na dachu i snopem świateł. Zrzuca palety pod koła.</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">📱 <b>Spedytor w Garniturze</b></div>
-            <div>Emituje fale dźwiękowe („Gdzie auto?!”) paraliżujące ruch na korytarzach.</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🏗️ <b>Pan Wiesław (Wysoki Skład - Boss)</b></div>
-            <div>Legendarny operator wózka bocznego. Zrzuca salwy palet z wysokości 12 metrów!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🦅 <b>Główny Inspektor KAS (Boss)</b></div>
-            <div>Pieczętuje wszystko czerwonym stemplem SAD i stawia laserowe bramki rewizyjne.</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🚽 <b>Mecha-ToiToi 3000 (Boss)</b></div>
-            <div>Zmutowana kabina sanitarna o napędzie biologicznym, odporna na spowolnienia.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab: EVOLUTIONS GUIDE -->
-      <div id="tab-evolutions" class="tab-content">
-        <p>💥 <b>Receptury Ewolucji Broni (Vampire Survivors Style):</b></p>
-        <div class="evo-grid">
-          <div class="evo-card">
-            <div class="evo-formula">🔦 Skaner Laserowy (MAX) + 🔋 Super Bateria</div>
-            <div>➔ <b>📡 Przemysłowa Bramka RFID:</b> Wirująca siatka laserowa i +50% do dropu XP!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🧻 Taśma Pakowa (MAX) + 📜 Certyfikat ISO (Magnes)</div>
-            <div>➔ <b>🌀 Automatyczna Owijarka:</b> Wirujący pierścień streczu unieruchamiający wrogów!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🪵 Ręczny Paleciak (MAX) + 🛢️ Smar Syntetyczny (Kawa)</div>
-            <div>➔ <b>🚜 Wózek BT High-Stack:</b> Zostawia plamy oleju i taranuje wrogów!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🧯 Gaśnica PPOŻ (MAX) + 📋 Protokół BHP (Widły)</div>
-            <div>➔ <b>❄️ System Zraszaczowy PPOŻ:</b> Co 10s zamraża wszystkich wrogów na hali!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🔗 Trytytki (MAX) + 📜 Certyfikat ISO (Magnes)</div>
-            <div>➔ <b>🔗 Stalowe Trytytki:</b> Zatrzymują wrogów i przebijają hordy!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🔪 Nóż Stanley (MAX) + 📋 Protokół BHP (Widły)</div>
-            <div>➔ <b>🔪 Ostrze Stanley Max:</b> Wirujące ostrza latające po całej hali!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">📌 Zszywacz Pneumatyczny (MAX) + 🔋 Super Bateria</div>
-            <div>➔ <b>💥 Pneumatyczny Działobit Zszywkowy:</b> Nieustanna nawałnica rykoszetujących klamer!</div>
-          </div>
-          <div class="evo-card">
-            <div class="evo-formula">🔨 Młot Udarowy (MAX) + 🛢️ Smar Syntetyczny (Kawa)</div>
-            <div>➔ <b>🚜 Hydrauliczny Młot Burzący BT:</b> Potężne trzęsienie ziemi i fala uderzeniowa 360°!</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab: SCORES -->
-      <div id="tab-scores" class="tab-content">
-        <p>📊 <b>Lokalne Wyniki Zmian (Room Database):</b></p>
-        <div id="scores-container" class="scores-list">
-          <div style="color: #64748b; text-align: center; padding: 15px;">Brak zapisów. Rozegraj pierwszą rundę!</div>
-        </div>
-      </div>
-
-      <!-- Tab: ACHIEVEMENTS -->
-      <div id="tab-achievements" class="tab-content">
-        <p>🏆 <b>Osiągnięcia Magazynowe DTA:</b></p>
-        <div id="achievements-container" class="ach-grid"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- STAGE TRANSITION MODAL (SECTOR VICTORY POPUP) -->
-  <div id="stage-transition-screen" class="screen-overlay">
-    <div class="card-modal" style="border-color: #22c55e; text-align: center; max-width: 440px;">
-      <h1 style="color: #4ade80; font-size: 22px;">🎉 SEKTOR UKOŃCZONY!</h1>
-      <h2 id="transition-boss-title" style="color: #facc15; font-size: 15px; margin: 4px 0;">BOSS POKONANY: KIEROWNIK ZBIGNIEW</h2>
-      <div class="story-box" id="transition-desc-text" style="border-color: #22c55e; color: #86efac; margin: 8px 0; font-size: 11px;">
-        Przełamano opór na rampie załadunkowej! Wkraczasz w głąb hali: SEKTOR 2 - ALEJE WYSOKIEGO SKŁADU!
-      </div>
-      <div style="display: flex; justify-content: space-around; background: #0f172a; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); margin: 6px 0; font-size: 11px;">
-        <div>⚡ BATERIA: <b style="color:#4ade80;">+100% REGEN</b></div>
-        <div>💰 MONETY: <b style="color:#facc15;">+500 DTA</b></div>
-        <div>⭐ BONUS EXP: <b style="color:#38bdf8;">+300 XP</b></div>
-      </div>
-      <button id="btn-next-sector" class="btn-main" style="background: linear-gradient(180deg, #22c55e, #16a34a); color: #fff; margin-top: 8px;">WKRACZAJ DO NOWEGO SEKTORA ➔</button>
-    </div>
-  </div>
-
-  <!-- LEVEL UP SCREEN -->
-  <div id="levelup-screen" class="screen-overlay" style="display: none;">
-    <div class="card-modal levelup-modal-container">
-      <div class="card-modal-header">
-        <h1 class="levelup-modal-title">⭐ AWANS ZAWODOWY!</h1>
-        <p class="levelup-modal-subtitle">Wybierz kartę ulepszenia magazynowego wózka:</p>
-      </div>
-      <div id="upgrade-container" class="upgrade-list"></div>
-      <div class="card-action-bar">
-        <button id="btn-reroll-cards" class="btn-card-action btn-reroll" onclick="rerollLevelUpCards()">🔄 PRZELOSUJ (<span id="reroll-count">2</span>)</button>
-        <button id="btn-skip-card" class="btn-card-action btn-skip" onclick="skipLevelUpCard()">⏩ POMIŃ (+50💰)</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- GAME OVER SCREEN -->
-  <div id="gameover-screen" class="screen-overlay" style="display: none;">
-    <div class="card-modal" style="border-color: #ef4444; max-width: 480px; width: 92%;">
-      <h1 style="color: #ef4444; margin: 0 0 4px 0; font-size: 24px;">💀 ROZŁADOWANY!</h1>
-      <h2 style="color: #cbd5e1; font-size: 14px; margin: 0 0 10px 0;">Wózek stanął dęba w Alei Magazynowej</h2>
-      <p id="gameover-stats" style="font-size: 13px; color: #facc15; margin-bottom: 8px; font-weight: 700;">Przetrwano do: 04:22 | Punkty: 1250 | Poziom: 4</p>
+    const window = { innerWidth: 800, innerHeight: 600, requestAnimationFrame: ()=>{}, addEventListener: ()=>{}, eventFlags: {} };
+    const requestAnimationFrame = window.requestAnimationFrame;
+    const performance = { now: () => 1000 };
+    const Math = global.Math;
+    const console = global.console;
+    let localStorage = { getItem: ()=>{}, setItem: ()=>{} };
+    const Image = function() {};
+    const navigator = { vibrate: ()=>{} };
+    const AudioContext = function() { this.createOscillator = () => ({ connect: ()=>{}, start: ()=>{}, stop: ()=>{}, type: '', frequency: { setValueAtTime: ()=>{} } }); this.createGain = () => ({ connect: ()=>{}, gain: { setValueAtTime: ()=>{}, exponentialRampToValueAtTime: ()=>{} } }); this.destination = {}; };
+    try {
       
-      <!-- WEAPON DPS BREAKDOWN TABLE -->
-      <div id="gameover-dps-box" style="background: rgba(15, 23, 42, 0.85); border: 1px solid #334155; border-radius: 10px; padding: 10px; margin: 8px 0; max-height: 160px; overflow-y: auto; text-align: left;">
-        <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between;">
-          <span>⚔️ ARSENAŁ / BROŃ</span>
-          <span>OBRAŻENIA (DPS)</span>
-        </div>
-        <div id="gameover-dps-list"></div>
-      </div>
-
-      <div class="story-box" style="border-color: #f59e0b; color: #fef08a; font-size: 11px; padding: 8px; margin: 8px 0;">
-        Grzesiek z BHP wręczył Ci mandat 500 PLN, a Udziałowiec Igor wykręcił ostatnią żarówkę nad Twoją głową.
-      </div>
-      
-      <div style="display: flex; gap: 8px; width: 100%; margin-top: 8px;">
-        <button id="btn-restart" class="btn-main" style="flex: 1; margin: 0;">SPRÓBUJ PONOWNIE</button>
-        <button onclick="goToWorkshopFromEndScreen()" class="btn-main" style="flex: 1; margin: 0; background: linear-gradient(180deg, #f59e0b, #d97706); color: #000; font-weight: 900;">🛠️ WARSZTAT BHP</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- WIN SCREEN -->
-  <div id="win-screen" class="screen-overlay" style="display: none;">
-    <div class="card-modal" style="border-color: #22c55e; max-width: 480px; width: 92%;">
-      <h1 style="color: #4ade80; margin: 0 0 4px 0; font-size: 24px;">🎉 07:00 - FAJRANT!</h1>
-      <h2 style="color: #86efac; font-size: 14px; margin: 0 0 10px 0;">ODPRAWA ZAKOŃCZONA SUKCESEM!</h2>
-      <p id="win-stats" style="font-size: 13px; color: #facc15; margin-bottom: 8px; font-weight: 700;">Przetrwałeś całą nocną zmianę! Zlikwidowane moby: 450</p>
-      
-      <!-- WEAPON DPS BREAKDOWN TABLE -->
-      <div id="win-dps-box" style="background: rgba(15, 23, 42, 0.85); border: 1px solid #166534; border-radius: 10px; padding: 10px; margin: 8px 0; max-height: 160px; overflow-y: auto; text-align: left;">
-        <div style="font-size: 11px; font-weight: 800; color: #86efac; text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between;">
-          <span>⚔️ ARSENAŁ / BROŃ</span>
-          <span>OBRAŻENIA (DPS)</span>
-        </div>
-        <div id="win-dps-list"></div>
-      </div>
-
-      <div class="story-box" style="border-color: #22c55e; color: #86efac; font-size: 11px; padding: 8px; margin: 8px 0;">
-        W socjalnym odnalazło się Kinder Bueno! Kontener przed 16:00 rozładowany, a ToiToi zneutralizowany. Jesteś legendą DTA Graniczna 8f!
-      </div>
-      
-      <div style="display: flex; gap: 8px; width: 100%; margin-top: 8px;">
-        <button id="btn-win-restart" class="btn-main" style="flex: 1; margin: 0; background: linear-gradient(180deg, #22c55e, #16a34a); color:#fff;">GRAJ OD NOWA</button>
-        <button onclick="goToWorkshopFromEndScreen()" class="btn-main" style="flex: 1; margin: 0; background: linear-gradient(180deg, #facc15, #ca8a04); color: #000; font-weight: 900;">🛠️ WARSZTAT BHP</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- LUCKY CARGO CHEST MODAL (Vampire Survivors Chest Opening) -->
-  <div id="chest-screen" class="screen-overlay" style="display: none;">
-    <div class="chest-modal">
-      <div class="chest-banner">✨ ZŁOTA PALETA SKARBÓW! ✨</div>
-      <div id="chest-anim-box" class="chest-visual-box">🎁</div>
-      <div id="chest-status-text" style="color: #fef08a; font-weight: 800; font-size: 14px; margin-bottom: 6px;">ODPIECZĘTOWYWANIE SAD...</div>
-      <div id="chest-slots" class="chest-slots-grid"></div>
-      <div style="display: flex; gap: 8px; justify-content: center; margin-top: 10px;">
-        <button id="btn-claim-chest" class="btn-main" style="background: linear-gradient(180deg, #facc15, #ca8a04); color: #000; font-weight: 900;">ODBIERZ ŁUP! 🚀</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- PAUSE / INVENTORY / SYNERGY SCREEN -->
-    <div id="pause-screen" class="screen-overlay" style="display: none;">
-    <div class="pause-modal">
-      <div class="pause-header">
-        <div class="pause-title">⏸️ RAPORT ZMIANY (PAUZA)</div>
-        <button onclick="togglePause()" style="background: #ef4444; border: none; color: #fff; border-radius: 8px; width: 32px; height: 32px; font-weight: 900; cursor: pointer;">✕</button>
-      </div>
-
-      <div class="pause-tabs-bar">
-        <button id="ptab-btn-options" class="pause-tab-btn active" onclick="showPauseTab('options')">⚙️ OPCJE</button>
-        <button id="ptab-btn-build" class="pause-tab-btn" onclick="showPauseTab('build')">⚔️ EKWIPUNEK</button>
-        <button id="ptab-btn-guide" class="pause-tab-btn" onclick="showPauseTab('guide')">❓ JAK GRAĆ</button>
-        <button id="ptab-btn-exit" class="pause-tab-btn" onclick="showPauseTab('exit')" style="border-color: #ef4444; color: #f87171;">🏠 MENU</button>
-      </div>
-
-      <!-- TAB 1: OPCJE -->
-      <div id="ptab-content-options" class="pause-tab-content" style="display: block;">
-        <div class="option-row">
-          <label>🔊 Efekty Dźwiękowe SFX:</label>
-          <div class="slider-wrapper">
-            <input type="range" min="500" max="1200" value="850" id="opt-sfx-slider" oninput="updateSfxVolume(this.value)">
-            <span id="lbl-sfx-vol">100%</span>
-          </div>
-        </div>
-        <div class="option-row">
-          <label>🚜 Silnik Wózka BT:</label>
-          <div class="slider-wrapper">
-            <input type="range" min="500" max="1200" value="850" id="opt-motor-slider" oninput="updateMotorVolume(this.value)">
-            <span id="lbl-motor-vol">80%</span>
-          </div>
-        </div>
-        <div class="option-row">
-          <label>🔍 Widok Kamery (Klaustrofobia):</label>
-          <div class="slider-wrapper">
-            <input type="range" min="180" max="750" value="320" id="opt-zoom-slider" oninput="updateCameraZoomSetting(this.value)">
-            <span id="lbl-zoom-vol">320px</span>
-          </div>
-        </div>
-        <div class="option-row">
-          <label>💡 Cienie i Efekty Decali:</label>
-          <button id="btn-opt-shadows" onclick="toggle3DShadowsSetting()" class="btn-opt-toggle">Cienie Decali: WŁĄCZONE</button>
-        </div>
-        <div class="option-row">
-          <label>📳 Wibracje Haptyczne:</label>
-          <button id="btn-opt-vib" onclick="toggleVibrationSetting()" class="btn-opt-toggle">Wibracje: WŁĄCZONE</button>
-        </div>
-      </div>
-
-      <!-- TAB 2: EKWIPUNEK -->
-      <div id="ptab-content-build" class="pause-tab-content" style="display: none;">
-        <div id="pause-run-stats" class="pause-stats-grid">
-          <div>⏰ CZAS: <b id="pstat-time" style="color:#facc15;">00:00</b></div>
-          <div>💀 ZLIKWIDOWANI: <b id="pstat-kills" style="color:#ef4444;">0</b></div>
-          <div>⭐ POZIOM: <b id="pstat-lvl" style="color:#38bdf8;">1</b></div>
-        </div>
-        <div class="pause-section-title">⚔️ Aktywny Arsenał Magazyniera:</div>
-        <div id="pause-weapons-grid" class="pause-gear-grid"></div>
-        <div class="pause-section-title">🛡️ Przedmioty Pasywne:</div>
-        <div id="pause-passives-grid" class="pause-gear-grid"></div>
-        <div class="pause-section-title">💥 Przepisy Ewolucji Broni:</div>
-        <div id="pause-synergies-list" class="synergy-list"></div>
-      </div>
-
-      <!-- TAB 3: JAK GRAĆ -->
-      <div id="ptab-content-guide" class="pause-tab-content" style="display: none;">
-        <div class="guide-box">
-          <p>🕹️ <b>Sterowanie:</b> Użyj lewej gałki dotykowej lub klawiszy WASD / Strzałek do poruszania wózkiem lub magazynierem.</p>
-          <p>⚡ <b>Zdolność Specjalna:</b> Przycisk "KONTROLA BHP" wyzwala falę uderzeniową odpychającą wrogów.</p>
-          <p>💥 <b>Zagrożenia Magazynowe:</b> Uważaj na beczki ADR (Gaz, Kwas, Olej) — strzał w nie wywołuje obszarowy wybuch!</p>
-          <p>📦 <b>Przetrwanie Zmiany:</b> Co 2 minuty nadchodzi Boss (Inspektor PIP, Sanepid, Dyrektor KAS). Pokonaj go, aby odblokować Skrzynię Zmiany!</p>
-        </div>
-      </div>
-
-      <!-- TAB 4: WYJŚCIE DO MENU -->
-      <div id="ptab-content-exit" class="pause-tab-content" style="display: none;">
-        <div class="exit-confirm-box">
-          <p style="font-size: 13px; font-weight: 800; color: #f87171; text-align: center; margin-bottom: 10px;">⚠️ CZY NA PEWNO CHCESZ PRZERWAĆ ZMIANĘ?</p>
-          <p style="font-size: 11px; color: #cbd5e1; text-align: center; line-height: 1.4; margin-bottom: 14px;">
-            Bieżąca rozgrywka zostanie zakończona. Osiągnięcia i uzyskane monety DTA z obecnego biegu zostaną bezpiecznie zapisane w bazie danych Room DB.
-          </p>
-          <div style="display: flex; gap: 8px;">
-            <button onclick="confirmExitToMainMenu()" class="btn-main" style="background: linear-gradient(180deg, #ef4444, #991b1b); flex: 1;">TAK, WYJDŹ DO MENU 🏠</button>
-            <button onclick="showPauseTab('options')" class="btn-main" style="background: #334155; flex: 1;">WRÓĆ DO OPCJI ⚙️</button>
-          </div>
-        </div>
-      </div>
-
-      <div style="margin-top: 12px;">
-        <button onclick="togglePause()" class="btn-main" style="background: linear-gradient(180deg, #38bdf8, #0284c7); color: #fff;">POWRÓT DO GRY ▶️</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
 /* ==========================================================================
    DTA GRANICZNA 8F: MASSIVE HORDE SURVIVORS ENGINE WITH EVOLUTIONS & BOSSES
    ========================================================================== */
@@ -2614,7 +239,7 @@ function toggleMuteSound() {
 
 // Canvas & Engine Constants
 const canvas = document.getElementById('gameCanvas');
-const ctx = canvas ? (canvas.getContext('2d', { alpha: false }) || canvas.getContext('2d')) : null;
+const ctx = canvas ? canvas.getContext('2d', { alpha: false, desynchronized: true }) : null;
 if (ctx) {
   ctx.imageSmoothingEnabled = false;
   ctx.webkitImageSmoothingEnabled = false;
@@ -4627,7 +2252,6 @@ let chestPendingRewards = [];
 
 function openLuckyChest(tier = 1) {
   gameState = STATE.CHEST;
-  if (window.gameStateManager) window.gameStateManager.transitionTo(window.GAME_STATES.CHEST);
   sounds.chestFanfare();
   screenShake = 12;
 
@@ -4753,14 +2377,12 @@ function claimLuckyChest() {
 function togglePause() {
   if (gameState === STATE.PLAYING) {
     gameState = STATE.PAUSED;
-    if (window.gameStateManager) window.gameStateManager.transitionTo(window.GAME_STATES.PAUSED);
     renderPauseScreen();
     document.getElementById('pause-screen').style.display = 'flex';
     sounds.beep();
   } else if (gameState === STATE.PAUSED) {
     document.getElementById('pause-screen').style.display = 'none';
     gameState = STATE.PLAYING;
-    if (window.gameStateManager) window.gameStateManager.transitionTo(window.GAME_STATES.RUNNING);
     sounds.beep();
   }
 }
@@ -4968,71 +2590,51 @@ function showIntroDialog() {
 
 function updateIntroView() {
   const scene = INTRO_ART_SCENES[currentIntroIndex];
-  if (!scene) return;
   
   // Play dramatic sound cue
-  try {
-    if (scene.sound) {
-      if (typeof sounds[scene.sound] === 'function') sounds[scene.sound]();
-      else if (typeof sounds['play' + scene.sound.charAt(0).toUpperCase() + scene.sound.slice(1)] === 'function') {
-        sounds['play' + scene.sound.charAt(0).toUpperCase() + scene.sound.slice(1)]();
-      }
-    }
-  } catch(e) { console.warn("Intro Sound Error:", e); }
-
-  // Update Visual Comic Stage
-  const artBadge = document.getElementById('intro-art-badge');
-  if (artBadge) artBadge.innerText = scene.badge;
-  const artStamp = document.getElementById('intro-art-stamp');
-  if (artStamp) artStamp.innerText = scene.stamp;
-  const artSatire = document.getElementById('intro-art-satire');
-  if (artSatire) artSatire.innerText = scene.satire;
-  const alertTag = document.getElementById('intro-alert-tag');
-  if (alertTag) alertTag.innerText = scene.alertTag;
-  
-  const artVisual = document.getElementById('intro-art-visual');
-  if (artVisual) {
-    if (scene.render) {
-      artVisual.innerHTML = scene.render();
-    } else {
-      // Default GTA style render
-      let icon = '🏭';
-      let bgCol = '#facc15';
-      if (currentIntroIndex === 0) { icon = '🧔🏻‍♂️'; bgCol = '#f59e0b'; }
-      if (currentIntroIndex === 1) { icon = '👷‍♂️'; bgCol = '#ef4444'; }
-      if (currentIntroIndex === 2) { icon = '👨‍💻'; bgCol = '#38bdf8'; }
-      if (currentIntroIndex === 3) { icon = '🕴️'; bgCol = '#dc2626'; }
-      
-      // If we are on the last screen, show character icon
-      if (currentIntroIndex === INTRO_ART_SCENES.length - 1) {
-        const char = CHARACTERS[selectedCharKey] || CHARACTERS['piotr'];
-        icon = char.icon || '🚜'; 
-        bgCol = '#22c55e';
-      }
-      
-      artVisual.innerHTML = `
-        <div style="width:100%;height:100%;background:linear-gradient(135deg,#0f172a 0%,#020617 100%);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;">
-          <div style="position:absolute;width:200%;height:200%;background:repeating-linear-gradient(45deg,transparent,transparent 20px,rgba(255,255,255,0.03) 20px,rgba(255,255,255,0.03) 40px);animation:panBg 10s linear infinite;"></div>
-          <div style="display:flex;align-items:center;justify-content:center;z-index:2;background:${bgCol}22;padding:20px;border-radius:24px;border:4px solid ${bgCol};box-shadow:0 0 40px ${bgCol}66; transform: rotate(-2deg) scale(1.1);">
-            <div style="font-size:100px;filter:drop-shadow(5px 5px 0px #000);">${icon}</div>
-          </div>
-        </div>
-        <style>
-          @keyframes panBg { 0% { transform: translate(-25%, -25%); } 100% { transform: translate(0, 0); } }
-        </style>
-      `;
-    }
+  if (scene.sound && sounds[scene.sound]) {
+    try { sounds[scene.sound](); } catch(e) {}
   }
 
-  const speakerEl = document.getElementById('intro-speaker');
-  const textEl = document.getElementById('intro-text');
-
-  if (currentIntroIndex === INTRO_ART_SCENES.length - 1) {
-    const char = CHARACTERS[selectedCharKey] || CHARACTERS['piotr'];
-    if (speakerEl) {
-      speakerEl.innerText = `${char.icon} ${char.name.toUpperCase()} (W AKCJI)`;
-      speakerEl.style.color = '#4ade80';
+  // Update Visual Comic Stage
+  document.getElementById('intro-art-badge').innerText = scene.badge;
+  document.getElementById('intro-art-stamp').innerText = scene.stamp;
+  document.getElementById('intro-art-satire').innerText = scene.satire;
+  document.getElementById('intro-alert-tag').innerText = scene.alertTag;
+  
+  if (scene.render) {
+    document.getElementById('intro-art-visual').innerHTML = scene.render();
+  } else {
+    // Default GTA style render
+    let icon = '🏭';
+    let bgCol = '#facc15';
+    if (currentIntroIndex === 0) { icon = '🧔🏻‍♂️'; bgCol = '#f59e0b'; }
+    if (currentIntroIndex === 1) { icon = '👷‍♂️'; bgCol = '#ef4444'; }
+    if (currentIntroIndex === 2) { icon = '👨‍💻'; bgCol = '#38bdf8'; }
+    if (currentIntroIndex === 3) { icon = '🕴️'; bgCol = '#dc2626'; }
+    if (currentIntroIndex === 4) { 
+      const char = CHARACTERS[selectedCharKey];
+      icon = char ? char.icon : '🚜'; 
+      bgCol = '#22c55e';
     }
+    
+    document.getElementById('intro-art-visual').innerHTML = `
+      <div style="width:100%;height:100%;background:linear-gradient(135deg,#0f172a 0%,#020617 100%);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+        <div style="position:absolute;width:200%;height:200%;background:repeating-linear-gradient(45deg,transparent,transparent 20px,rgba(255,255,255,0.03) 20px,rgba(255,255,255,0.03) 40px);animation:panBg 10s linear infinite;"></div>
+        <div style="display:flex;align-items:center;justify-content:center;z-index:2;background:${bgCol}22;padding:20px;border-radius:24px;border:4px solid ${bgCol};box-shadow:0 0 40px ${bgCol}66; transform: rotate(-2deg) scale(1.1);">
+          <div style="font-size:100px;filter:drop-shadow(5px 5px 0px #000);">${icon}</div>
+        </div>
+      </div>
+      <style>
+        @keyframes panBg { 0% { transform: translate(-25%, -25%); } 100% { transform: translate(0, 0); } }
+      </style>
+    `;
+  }
+
+  if (currentIntroIndex === 4) {
+    const char = CHARACTERS[selectedCharKey];
+    document.getElementById('intro-speaker').innerText = `${char.icon} ${char.name.toUpperCase()} (W AKCJI)`;
+    document.getElementById('intro-speaker').style.color = '#4ade80';
     let heroLine = "";
     if (selectedCharKey === 'piotr') heroLine = 'Piotr: Odpalam pistolet na gaz na metalowe kulki, a moja suczka Kluska już ostrzy zęby na łydki urzędników KAS! Żaden bus ani kurier nie odjedzie bez stempla SAD na czole! HAU HAU!';
     else if (selectedCharKey === 'radek') heroLine = 'Radek: Wrzucam bieg w Toyocie BT, robię drift na epoksydzie i taranuję widłami wszystko, co blokuje rampę!';
@@ -5043,36 +2645,26 @@ function updateIntroView() {
     else if (selectedCharKey === 'ania_biuro') heroLine = 'Ania: Pieczątka odmowy przygotowana! Każdy brakujący dokument oznacza natychmiastowe 24H kwarantanny celnej!';
     else if (selectedCharKey === 'grzesiek_zastepca') heroLine = 'Grzesiek: Termos z kawą pełny, kamizelka zapięta pod szyję! Kontrola BHP wjeżdża na rampę!';
     else heroLine = `${char.name.split(' ')[0]}: Wsiadam na wózek, biorę papier toaletowy i wlepiam 24h przetrzymania na SAD! Jazda!`;
-    if (textEl) textEl.innerText = heroLine;
+    document.getElementById('intro-text').innerText = heroLine;
   } else {
-    if (speakerEl) {
-      speakerEl.innerText = scene.speaker;
-      speakerEl.style.color = scene.color;
-    }
-    if (textEl) textEl.innerText = scene.text;
+    document.getElementById('intro-speaker').innerText = scene.speaker;
+    document.getElementById('intro-speaker').style.color = scene.color;
+    document.getElementById('intro-text').innerText = scene.text;
   }
 
-  const nextBtn = document.getElementById('btn-intro-next');
-  if (nextBtn) {
-    if (currentIntroIndex === INTRO_ART_SCENES.length - 1) {
-      nextBtn.innerText = 'JAZDA NA HALĘ! 🚀';
-    } else {
-      nextBtn.innerText = 'DALEJ ➔';
-    }
+  if (currentIntroIndex === INTRO_ART_SCENES.length - 1) {
+    document.getElementById('btn-intro-next').innerText = 'JAZDA NA HALĘ! 🚀';
+  } else {
+    document.getElementById('btn-intro-next').innerText = 'DALEJ ➔';
   }
 }
 
 function nextIntroBtn() {
-  console.log("Intro: Next clicked at index", currentIntroIndex);
-  try {
-    if (typeof sounds !== 'undefined' && sounds.init) sounds.init();
-    if (typeof sounds !== 'undefined' && sounds.beep) sounds.beep();
-  } catch(e) {}
-  
+  sounds.init();
+  sounds.beep();
   currentIntroIndex++;
   if (currentIntroIndex >= INTRO_ART_SCENES.length) {
-    const introScreen = document.getElementById('intro-screen');
-    if (introScreen) introScreen.style.display = 'none';
+    document.getElementById('intro-screen').style.display = 'none';
     startGamePlay();
   } else {
     updateIntroView();
@@ -5080,13 +2672,8 @@ function nextIntroBtn() {
 }
 
 function skipIntroBtn() {
-  console.log("Intro: Skip clicked");
-  try {
-    if (typeof sounds !== 'undefined' && sounds.init) sounds.init();
-  } catch(e) {}
-  
-  const introScreen = document.getElementById('intro-screen');
-  if (introScreen) introScreen.style.display = 'none';
+  sounds.init();
+  document.getElementById('intro-screen').style.display = 'none';
   startGamePlay();
 }
 
@@ -5235,36 +2822,6 @@ window.addEventListener('touchstart', handleTouchStart, { passive: false });
 window.addEventListener('touchmove', handleTouchMove, { passive: false });
 window.addEventListener('touchend', handleTouchEnd, { passive: false });
 window.addEventListener('touchcancel', handleTouchEnd, { passive: false });
-
-// Mouse & Pointer events fallback for Desktop Browser / AI Studio Streaming Emulator / Mouse Drag
-let isMouseDown = false;
-window.addEventListener('mousedown', (e) => {
-  if (gameState !== STATE.PLAYING) return;
-  if (e.target && e.target.closest && e.target.closest('.screen-overlay, .card-modal, .pause-modal, .tab-content, button, .tab-btn, .workshop-card, .upgrade-card, .char-card, .hud-btn-pause, #hud-pause-btn, #btn-skill, #btn-detention, .action-btn, .hud-btn')) {
-    return;
-  }
-  isMouseDown = true;
-  handleTouchStart({
-    changedTouches: [{ identifier: 'mouse', clientX: e.clientX, clientY: e.clientY }]
-  });
-});
-
-window.addEventListener('mousemove', (e) => {
-  if (!isMouseDown || gameState !== STATE.PLAYING) return;
-  handleTouchMove({
-    cancelable: true,
-    preventDefault: () => {},
-    changedTouches: [{ identifier: 'mouse', clientX: e.clientX, clientY: e.clientY }]
-  });
-});
-
-window.addEventListener('mouseup', (e) => {
-  if (!isMouseDown) return;
-  isMouseDown = false;
-  handleTouchEnd({
-    changedTouches: [{ identifier: 'mouse', clientX: e.clientX, clientY: e.clientY }]
-  });
-});
 
 function triggerSkill() {
   if (player.skillCooldown <= 0 && gameState === STATE.PLAYING) {
@@ -6255,7 +3812,6 @@ function triggerLevelUpModal(isReroll = false) {
   }
   
   gameState = STATE.LEVELUP;
-  if (window.gameStateManager) window.gameStateManager.transitionTo(window.GAME_STATES.LEVELUP);
   
   if (useAndroidCompose) {
     document.getElementById('levelup-screen').style.display = 'none';
@@ -6527,7 +4083,6 @@ function closeLevelUp() {
   } else {
     document.getElementById('levelup-screen').style.display = 'none';
     gameState = STATE.PLAYING;
-    if (window.gameStateManager) window.gameStateManager.transitionTo(window.GAME_STATES.RUNNING);
     updateWeaponsHud();
   }
 }
@@ -8073,9 +5628,8 @@ function update(dt) {
   }
   const sectorBadge = document.getElementById('badge-sector');
   if (sectorBadge) {
-    sectorBadge.innerText = `S${curSec.id}`;
-    // If you want to keep the countdown, maybe add it to a separate element or just keep it simple
-    // For now, let's just show the sector ID as requested for clarity
+    sectorBadge.innerText = `ZONE: S${curSec.id} | SHIFT_ALARM: ${bossCountdownStr}`;
+    sectorBadge.style.borderColor = curSec.hazardColor;
   }
 
   // --- DYNAMIC SHIFT EVENTS (03:30 KAS Audit, 04:15 Cold Storage Freeze, Velvet Powerups) ---
@@ -9203,7 +6757,7 @@ const angularDiff = Math.abs(diff);
   }
   if (batteryFillElem) {
     batteryFillElem.style.width = `${batteryPct}%`;
-    batteryFillElem.className = 'battery-level-fill' + (batteryPct < 20 ? ' critical' : (batteryPct < 50 ? ' warning' : ''));
+    batteryFillElem.className = 'battery-bar-fill' + (batteryPct < 20 ? ' critical' : (batteryPct < 50 ? ' warning' : ''));
   }
   if (batteryPanel) {
     if (batteryPct < 20) {
@@ -9231,20 +6785,23 @@ const angularDiff = Math.abs(diff);
   if (threatDot && threatText) {
     const closestMeters = (closestDist / 28).toFixed(1);
     if (nearbyThreatCount >= 14 || closestDist < 90) {
-      threatDot.className = 'radar-dot critical';
-      threatText.innerText = `⚠️ ALARM: HORDY (${nearbyThreatCount})`;
+      threatDot.className = 'threat-radar-indicator critical';
+      threatText.className = 'threat-status-label critical';
+      threatText.innerText = `⚠️ ALARM: HORDY (${nearbyThreatCount}) ${closestMeters}m`;
     } else if (nearbyThreatCount >= 5 || closestDist < 220) {
-      threatDot.className = 'radar-dot warning';
-      threatText.innerText = `UWAGA: ${nearbyThreatCount} WROGÓW`;
+      threatDot.className = 'threat-radar-indicator warning';
+      threatText.className = 'threat-status-label warning';
+      threatText.innerText = `UWAGA: ${nearbyThreatCount} WROGÓW (${closestMeters}m)`;
     } else {
-      threatDot.className = 'radar-dot';
-      threatText.innerText = `PERYMETR CZYSTY`;
+      threatDot.className = 'threat-radar-indicator';
+      threatText.className = 'threat-status-label';
+      threatText.innerText = `PERYMETR CZYSTY (${closestDist < 2000 ? closestMeters + 'm' : 'OK'})`;
     }
   }
 
   // 3. Shift Clock & Kills
   const clockElem = document.getElementById('badge-clock');
-  if (clockElem) clockElem.innerText = timeStr;
+  if (clockElem) clockElem.innerText = `TIME: ${timeStr}`;
 
   // 4. Logistics Combo Multiplier
   const totalCombo = Math.max(comboCount, packageCombo);
@@ -9262,9 +6819,9 @@ const angularDiff = Math.abs(diff);
 
   // 5. Level & Kills Tally
   const lvlElem = document.getElementById('badge-lvl');
-  if (lvlElem) lvlElem.innerText = playerLevel;
+  if (lvlElem) lvlElem.innerText = `LVL ${playerLevel}`;
   const killsElem = document.getElementById('badge-kills');
-  if (killsElem) killsElem.innerText = kills;
+  if (killsElem) killsElem.innerText = `DISP: ${kills}`;
   const xpFillElem = document.getElementById('xp-fill');
   if (xpFillElem) xpFillElem.style.width = `${Math.min(100, (currentXP / neededXP) * 100)}%`;
 
@@ -9548,42 +7105,14 @@ function drawSingleDropItem(ctx, it, fontScale) {
   } else if (it.type === 'sandwich') {
     ctx.fillStyle = '#f59e0b';
     ctx.fillRect(-6, -4, 12, 8);
-  } else if (it.type === 'lucky_chest' || it.type === 'chest') {
+  } else if (it.type === 'chest') {
     ctx.fillStyle = '#eab308';
     ctx.fillRect(-8, -6, 16, 12);
     ctx.strokeStyle = '#ca8a04';
     ctx.lineWidth = 1.5;
     ctx.strokeRect(-8, -6, 16, 12);
-  } else if (it.type === 'dta_coin') {
-    ctx.fillStyle = '#fbbf24';
-    ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#b45309'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.fillStyle = '#b45309'; ctx.font = 'bold 10px sans-serif'; ctx.fillText('$', -3, 3);
-  } else if (it.type === 'golden_forklift') {
-    ctx.fillStyle = '#facc15';
-    ctx.fillRect(-10, -8, 20, 16);
-    ctx.strokeStyle = '#fef08a';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(-10, -8, 20, 16);
-    ctx.fillStyle = '#000000'; ctx.font = 'bold 12px sans-serif'; ctx.fillText('🏆', -6, 4);
-  } else {
-    // Default fallback for any other items like hotdog, kinder_bueno, etc.
-    let icon = '📦';
-    if (it.type === 'hotdog' || it.type === 'sandwich') icon = '🌭';
-    else if (it.type === 'pizza_szefa') icon = '🍕';
-    else if (it.type === 'kinder_bueno') icon = '🍫';
-    else if (it.type === 'coffee_thermos' || it.type === 'coffee') icon = '☕';
-    else if (it.type === 'mystery_box') icon = '❓';
-    else if (it.type === 'dmuchawa_xp_vacuum') icon = '🌪️';
-    else if (it.type === 'gasnica_co2_nuke') icon = '🧯';
-    else if (it.type === 'przerwa_kawowa_freeze') icon = '⏱️';
-    ctx.fillStyle = '#f59e0b';
-    ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#ffffff'; ctx.font = '12px sans-serif'; ctx.fillText(icon, -6, 4);
   }
   ctx.restore();
-
-
 }
 
 function drawSingleEnemy(ctx, e, viewW, viewH) {
@@ -10223,102 +7752,74 @@ function render(dt = 0.016) {
 
 let hasLoggedLoopError = false;
 
-// Decoupled Game Updates & Rendering under single requestAnimationFrame Manager
-window.updateGameplay = function(dt) {
-  // Update particles (pooled/traditional compatibility)
-  for (let i = 0; i < MAX_PARTICLES; i++) {
-    const p = particlePool[i];
-    if (p && p.active) {
-      p.x += p.vx; p.y += p.vy; p.life -= dt;
-      p.vx *= 0.92; p.vy *= 0.92; 
-      if (p.life <= 0) p.active = false;
+function gameLoop(now) {
+  try {
+    if (!lastTime || isNaN(lastTime)) lastTime = now || performance.now();
+    if (!now) now = performance.now();
+    let dt = Math.min(0.1, Math.max(0, (now - lastTime) / 1000));
+    if (isNaN(dt)) dt = 0.016;
+    lastTime = now;
+    
+    if (window.timeScale === undefined) window.timeScale = 1.0;
+    if (window.timeScale < 1.0) {
+        window.timeScale = Math.min(1.0, window.timeScale + dt * 0.85); // Smoothly recover from slow-mo
     }
-  }
-  // Update floating damage texts
-  for (let i = 0; i < MAX_FLOATING_TEXTS; i++) {
-    const ft = floatingTexts[i];
-    if (ft && ft.active) {
-      ft.y -= dt * 25; ft.life -= dt;
-      if (ft.life <= 0) ft.active = false;
-    }
-  }
+    
+    const gameDt = dt * window.timeScale;
 
-  // Update spatial partitioning grid for optimized collisions
-  if (window.spatialGrid) {
-    window.spatialGrid.clear();
-    for (let i = 0; i < enemies.length; i++) {
-      const e = enemies[i];
-      if (e && !e.dead) {
-        window.spatialGrid.insert(e);
+    for (let i = 0; i < MAX_PARTICLES; i++) {
+      const p = particlePool[i];
+      if (p.active) {
+        p.x += p.vx; p.y += p.vy; p.life -= dt;
+        p.vx *= 0.92; p.vy *= 0.92; 
+        if (p.life <= 0) p.active = false;
       }
     }
+    for (let i = 0; i < MAX_FLOATING_TEXTS; i++) {
+      const ft = floatingTexts[i];
+      if (ft.active) {
+        ft.y -= dt * 25; ft.life -= dt;
+        if (ft.life <= 0) ft.active = false;
+      }
+    }
+
+    update(gameDt);
+    render(gameDt);
+  } catch (err) {
+    console.error("LOOP ERROR: ", err);
+    if (!hasLoggedLoopError) {
+      hasLoggedLoopError = true;
+      alert("CRITICAL LOOP ERROR: " + err.message + "\n" + err.stack);
+    }
   }
-
-  // Update wave director system for pacing, events and warning zones
-  if (window.waveDirectorSystem) {
-    const activeSector = WAREHOUSE_SECTORS[currentSectorIndex] || WAREHOUSE_SECTORS[0];
-    window.waveDirectorSystem.update(dt, gameTime, sectorTime, player, activeSector);
-  }
-
-  // Invoke monolithic core gameplay simulation
-  update(dt);
-};
-
-window.renderFrame = function(dt) {
-  render(dt);
-};
-
-window.updateHudThrottled = function() {
-  if (window.uiManager) {
-    const activeSector = WAREHOUSE_SECTORS[currentSectorIndex] || WAREHOUSE_SECTORS[0];
-    window.uiManager.updateHudThrottled(player, kills, gameTime, activeSector);
-  }
-};
-
-window.updateTelemetryThrottled = function() {
-  if (window.uiManager) {
-    const activeSector = WAREHOUSE_SECTORS[currentSectorIndex] || WAREHOUSE_SECTORS[0];
-    const xpProgress = player ? (player.xp / player.maxXp) : 0;
-    window.uiManager.updateTelemetryThrottled(player, kills, playerLevel, xpProgress, gameTime, activeSector);
-  }
-};
+  requestAnimationFrame(gameLoop);
+}
+requestAnimationFrame(gameLoop);
 
 // --- STATE MANAGERS & SAVING ---
 function startGame() {
   try {
-    if (sounds && sounds.init) sounds.init();
+    sounds.init();
     document.getElementById('start-screen').style.display = 'none';
-    document.getElementById('gameover-screen').style.display = 'none';
-    document.getElementById('win-screen').style.display = 'none';
-    document.getElementById('chest-screen').style.display = 'none';
-    document.getElementById('pause-screen').style.display = 'none';
-    document.getElementById('stage-transition-screen').style.display = 'none';
     showIntroDialog();
   } catch (err) {
-    console.error("START ERROR: ", err);
+    alert("START ERROR: " + err.message);
   }
 }
 
 function startGamePlay() {
-  console.log("GAME ENGINE: startGamePlay invoked!");
-  if (document.getElementById('start-screen')) document.getElementById('start-screen').style.display = 'none';
-  if (document.getElementById('intro-screen')) document.getElementById('intro-screen').style.display = 'none';
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('intro-screen').style.display = 'none';
   if (document.getElementById('levelup-screen')) document.getElementById('levelup-screen').style.display = 'none';
   if (document.getElementById('pause-screen')) document.getElementById('pause-screen').style.display = 'none';
-  if (document.getElementById('gameover-screen')) document.getElementById('gameover-screen').style.display = 'none';
-  if (document.getElementById('win-screen')) document.getElementById('win-screen').style.display = 'none';
-  if (document.getElementById('chest-screen')) document.getElementById('chest-screen').style.display = 'none';
-  if (document.getElementById('stage-transition-screen')) document.getElementById('stage-transition-screen').style.display = 'none';
-  
   if (sounds && sounds.init) sounds.init();
-  resizeCanvas();
   initSectorEnvironment();
   try {
     const c = CHARACTERS[selectedCharKey] || CHARACTERS['piotr'];
-    player.x = ARENA_WIDTH / 2;
-    player.y = ARENA_HEIGHT / 2;
-    player.vx = 0;
-    player.vy = 0;
+  player.x = ARENA_WIDTH / 2;
+  player.y = ARENA_HEIGHT / 2;
+  player.vx = 0;
+  player.vy = 0;
   
   // Base stats modified by Workshop permanent upgrades
   player.maxBattery = c.maxBattery + (workshopUpgrades.battery * 25);
@@ -10332,20 +7833,6 @@ function startGamePlay() {
   player.skillCooldown = 0;
   player.detentionCooldown = 0;
   player.rerolls = selectedCharKey === 'klaus' ? 4 : 2;
-  player.invulnTimer = 0;
-  player.isDashing = false;
-  player.goldenForkliftTimer = 0;
-  player.wantsForklift = false;
-  player.pipBribeActive = false;
-  player.pipBribe = false;
-  player.kamikazeIntern = false;
-  player.radioactiveAdr = false;
-  player.extraLifeUsed = false;
-  player.thorns = 0;
-  player.damageReduction = 0;
-  player.xpBonusMult = 1.0;
-  player.extraLives = 0;
-  player.stamina = player.maxStamina || 100;
 
   // Reset all weapons & passives
   Object.keys(weapons).forEach(k => {
@@ -10356,9 +7843,6 @@ function startGamePlay() {
   Object.keys(passives).forEach(k => {
     passives[k].level = 0;
   });
-  if (typeof weaponDamageStats !== 'undefined') {
-    Object.keys(weaponDamageStats).forEach(k => { weaponDamageStats[k] = 0; });
-  }
 
   // Assign starting weapon tailored to character lore
   if (selectedCharKey === 'marcin') {
@@ -10389,37 +7873,16 @@ function startGamePlay() {
   enemies = [];
   projectiles = [];
   dropItems = [];
-  speechBubbles = [];
-  skidMarks.length = 0;
-  if (typeof spentShells !== 'undefined') spentShells.length = 0;
-  if (typeof tacticalDrops !== 'undefined') tacticalDrops.length = 0;
-  if (splatterCtx) splatterCtx.clearRect(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
-  for (let i = 0; i < MAX_PARTICLES; i++) particlePool[i].active = false;
-  for (let i = 0; i < MAX_FLOATING_TEXTS; i++) floatingTexts[i].active = false;
-
+  initMapProps();
   gameTime = 0;
   sectorTime = 0;
   score = 0;
   kills = 0;
   comboCount = 0;
-  comboTimer = 0;
-  maxCombo = 0;
   packageCombo = 0;
   packageComboTimer = 0;
   maxPackageCombo = 0;
-  mysteryTimer = 0;
-  mysteryActive = '';
-  mysteryBuffMultiplier = 1.0;
-  levelUpPendingCount = 0;
-  levelUpProcessing = false;
-  bulletTimeTimer = 0;
-  freezeTimer = 0;
-  fireBulletsTimer = 0;
-  kamikazeTimer = 0;
-  hitStopTimer = 0;
-  screenShake = 0;
-  window.timeScale = 1.0;
-
+  mysteryTimer = 0; mysteryActive = ''; mysteryBuffMultiplier = 1.0;
   playerLevel = 1;
   currentXP = 0;
   neededXP = 50;
@@ -10438,8 +7901,6 @@ function startGamePlay() {
 
   updateWeaponsHud();
   gameState = STATE.PLAYING;
-  if (window.gameStateManager) window.gameStateManager.transitionTo(window.GAME_STATES.RUNNING);
-  if (window.gameLoopManager) window.gameLoopManager.start();
   triggerAchievement('first_blood', 'Pierwsza Odprawa', '📦');
   showAnnouncement('📍 SEKTOR 1: DOKI ROZŁADUNKOWE', '#f59e0b');
   } catch (err) {
@@ -10521,12 +7982,6 @@ function goToWorkshopFromEndScreen() {
 
 function gameOver(shiftTime, isWin) {
   gameState = isWin ? STATE.WIN : STATE.GAMEOVER;
-  if (window.gameStateManager) {
-    window.gameStateManager.transitionTo(isWin ? window.GAME_STATES.WIN : window.GAME_STATES.GAMEOVER);
-  }
-  if (window.gameLoopManager) {
-    window.gameLoopManager.stop();
-  }
   const bestCombo = Math.max(maxCombo, maxPackageCombo);
   const earnedCoins = Math.floor(score / 15) + (isWin ? 200 : 50) + (currentSectorIndex * 40);
   dtaCoins += earnedCoins;
@@ -10681,8 +8136,6 @@ window.togglePause = function() {
 window.onAndroidAppPause = function() {
   if (gameState === STATE.PLAYING) {
     gameState = STATE.PAUSED;
-    if (window.gameStateManager) window.gameStateManager.transitionTo(window.GAME_STATES.PAUSED);
-    if (window.gameLoopManager) window.gameLoopManager.stop();
   }
   if (sounds && sounds.ctx && sounds.ctx.state === 'running') {
     sounds.ctx.suspend().catch(() => {});
@@ -10692,10 +8145,6 @@ window.onAndroidAppPause = function() {
 window.onAndroidAppResume = function() {
   if (sounds && sounds.ctx && sounds.ctx.state === 'suspended' && !sounds.muted) {
     sounds.ctx.resume().catch(() => {});
-  }
-  if (gameState === STATE.PLAYING) {
-    if (window.gameStateManager) window.gameStateManager.transitionTo(window.GAME_STATES.RUNNING);
-    if (window.gameLoopManager) window.gameLoopManager.start();
   }
 };
 
@@ -10727,10 +8176,14 @@ window.buyWorkshopUpgrade = function(key, cost) { buyWorkshopUpgrade(key, cost);
 if (typeof sounds !== 'undefined') {
   window.sounds = sounds;
 }
-if (window.gameLoopManager) {
-  window.gameLoopManager.start();
-}
 console.log("GAME ENGINE LOADED COMPLETELY");
-</script>
-</body>
-</html>
+
+      console.log('Script parsed and executed globally without throwing errors.');
+      startGame();
+      console.log('startGame() called.');
+      gameLoop();
+      console.log('gameLoop() called.');
+    } catch (e) {
+      console.error(e.stack);
+    }
+  

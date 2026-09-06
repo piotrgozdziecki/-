@@ -104,9 +104,10 @@ fun ForkliftHudComposeOverlay(
 
     Box(
         modifier = modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        contentAlignment = Alignment.TopCenter
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
